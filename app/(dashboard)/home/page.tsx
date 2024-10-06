@@ -43,7 +43,7 @@ const generateExcel = (selectedJournals: JournalEntry[]) => {
 };
 
 // The ProductsTable component definition
-export function ProductsTable({
+function ProductsTable({
   journals,
   offset,
   totalJournals
@@ -57,8 +57,8 @@ export function ProductsTable({
 
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [excelData, setExcelData] = useState<ExcelData[]>([]);
-  const [uniqueOurTM, setUniqueOurTM] = useState<Set<string>>(new Set()); // State for unique Our TM values
-  const [selectedUniqueOurTM, setSelectedUniqueOurTM] = useState<Set<string>>(new Set()); // State for selected unique Our TM values
+  const [uniqueOurTM, setUniqueOurTM] = useState<Set<string>>(new Set());
+  const [selectedUniqueOurTM, setSelectedUniqueOurTM] = useState<Set<string>>(new Set());
 
   function prevPage() {
     router.push(`/?offset=${Math.max(offset - journalsPerPage, 0)}`, { scroll: false });
@@ -83,18 +83,16 @@ export function ProductsTable({
   const handleGenerateExcel = () => {
     const selectedJournals = journals.filter(journal => selectedRows.has(journal.journalNo));
 
-    // Prepare the data for the new table
     const preparedExcelData: ExcelData[] = selectedJournals.map((journal) => ({
-      applicationNoJournalTM: journal.journalNo, // Example - replace with actual data
-      applicationNoOurTM: '12345', // Placeholder - replace with actual data
-      journalTM: 'TM-001', // Placeholder - replace with actual data
-      ourTM: ['Our-TM-001', 'Our-TM-002'], // Example array of Our TM values
-      class: 'Class A', // Placeholder - replace with actual data
+      applicationNoJournalTM: journal.journalNo,
+      applicationNoOurTM: '12345', // Placeholder
+      journalTM: 'TM-001', // Placeholder
+      ourTM: ['Our-TM-001', 'Our-TM-002'], // Example
+      class: 'Class A', // Placeholder
     }));
 
     setExcelData(preparedExcelData);
 
-    // Update unique Our TM values
     const allOurTM = new Set<string>();
     preparedExcelData.forEach(data => {
       data.ourTM.forEach(ourTMValue => allOurTM.add(ourTMValue));
@@ -195,7 +193,6 @@ export function ProductsTable({
         </CardFooter>
       </Card>
 
-      {/* New table to display Excel data after generation */}
       {excelData.length > 0 && (
         <Card className="mt-4">
           <CardHeader>
@@ -268,7 +265,6 @@ export function ProductsTable({
 
 // HomePage component definition
 const HomePage = () => {
-  // Sample journal data
   const journals: JournalEntry[] = [
     { journalNo: 'J-1000', dateOfPublication: '2023-01-01', lastDate: '2023-01-15' },
     { journalNo: 'J-1001', dateOfPublication: '2023-02-01', lastDate: '2023-02-15' },
