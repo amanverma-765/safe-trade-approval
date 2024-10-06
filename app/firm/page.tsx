@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label"; // You may need to create a simple Label component without Radix
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Building2, CheckCircle } from "lucide-react";
 
 // Define the CompanySelectionComponent
-export function CompanySelectionComponent() {
+const CompanySelectionComponent = () => {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
 
   const handleCompanySelect = (value: string) => {
@@ -58,9 +57,11 @@ export function CompanySelectionComponent() {
       </Card>
     </div>
   );
-}
+};
 
 // Default export of the page
-export default function Page() {
+const Page = () => {
   return <CompanySelectionComponent />;
-}
+};
+
+export default Page; // Ensure this is the default export

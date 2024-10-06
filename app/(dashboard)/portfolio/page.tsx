@@ -11,8 +11,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
@@ -60,10 +58,10 @@ const TrademarkTable = ({ trademarks }: { trademarks: TrademarkEntry[] }) => {
   );
 };
 
-// HomePage component definition
-const HomePage = () => {
-  const [trademarks, setTrademarks] = useState<TrademarkEntry[]>([]); // Store trademark data
+// CompanySelectionComponent with Trademark Table
+const CompanySelectionComponent = () => {
   const [applicationId, setApplicationId] = useState<string>(''); // Store input value for Application ID
+  const [trademarks, setTrademarks] = useState<TrademarkEntry[]>([]); // Store trademark data
 
   // Function to handle adding new trademarks
   const addTrademark = () => {
@@ -79,12 +77,6 @@ const HomePage = () => {
     // Add new trademark to the list
     setTrademarks([...trademarks, newTrademark]);
     setApplicationId(''); // Clear the input field
-  };
-
-  // Function to handle Excel generation (placeholder for now)
-  const generateExcel = () => {
-    console.log("Generating Excel...");
-    // Implement your Excel generation logic here
   };
 
   return (
@@ -110,17 +102,17 @@ const HomePage = () => {
 
       {/* Trademark Table */}
       <TrademarkTable trademarks={trademarks} />
-
-      {/* Generate Excel Button - Shown only when there are trademarks */}
-      {trademarks.length > 0 && (
-        <div className="flex justify-start mt-4 mb-4">
-          <Button onClick={generateExcel} className="bg-blue-600 text-white hover:bg-blue-500 transition-all duration-300">
-            Generate Excel
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
 
-export default HomePage;
+// Default export of the page component
+const Page = () => {
+  return (
+    <div>
+      <CompanySelectionComponent />
+    </div>
+  );
+};
+
+export default Page; // Ensure that this is the default export
