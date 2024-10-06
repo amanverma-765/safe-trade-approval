@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 
 // Define the type for the Trademark entries
 interface TrademarkEntry {
@@ -29,7 +28,7 @@ interface TrademarkEntry {
 }
 
 // The TrademarkTable component definition
-export function TrademarkTable({ trademarks }: { trademarks: TrademarkEntry[] }) {
+const TrademarkTable = ({ trademarks }: { trademarks: TrademarkEntry[] }) => {
   return (
     <Card>
       <CardHeader>
@@ -59,7 +58,7 @@ export function TrademarkTable({ trademarks }: { trademarks: TrademarkEntry[] })
       </CardContent>
     </Card>
   );
-}
+};
 
 // HomePage component definition
 const HomePage = () => {
