@@ -1,0 +1,7 @@
+PyPDF2
+pandas
+beautifulsoup4
+requests
+openpyxl
+fuzzywuzzy
+jellyfish
