@@ -127,41 +127,43 @@ function ProductsTable({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Select</TableHead>
-                <TableHead>Journal No.</TableHead>
-                <TableHead>Date of Publication</TableHead>
-                <TableHead>Last Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {journals.map((journal) => (
-                <TableRow key={journal.journalNo}>
-                  <TableHead>
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.has(journal.journalNo)}
-                      onChange={() => handleRowSelect(journal.journalNo)}
-                    />
-                  </TableHead>
-                  <TableHead>{journal.journalNo}</TableHead>
-                  <TableHead>{journal.dateOfPublication}</TableHead>
-                  <TableHead>{journal.lastDate}</TableHead>
+          <div className="overflow-x-auto"> {/* Makes the table scrollable */}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Select</TableHead>
+                  <TableHead>Journal No.</TableHead>
+                  <TableHead>Date of Publication</TableHead>
+                  <TableHead>Last Date</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {journals.map((journal) => (
+                  <TableRow key={journal.journalNo}>
+                    <TableHead>
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.has(journal.journalNo)}
+                        onChange={() => handleRowSelect(journal.journalNo)}
+                      />
+                    </TableHead>
+                    <TableHead>{journal.journalNo}</TableHead>
+                    <TableHead>{journal.dateOfPublication}</TableHead>
+                    <TableHead>{journal.lastDate}</TableHead>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
-        <CardFooter className="flex justify-between items-center">
+        <CardFooter className="flex flex-col sm:flex-row justify-between items-center">
           <Button
             onClick={handleGenerateExcel}
             className="bg-black text-white hover:bg-gray-800 transition-all duration-300 mr-4"
           >
             Generate Search Report
           </Button>
-          <form className="flex items-center w-full justify-between">
+          <form className="flex flex-col sm:flex-row items-center w-full justify-between">
             <div className="text-xs text-muted-foreground">
               Showing{' '}
               <strong>
@@ -169,7 +171,7 @@ function ProductsTable({
               </strong>{' '}
               of <strong>{totalJournals}</strong> journals
             </div>
-            <div className="flex">
+            <div className="flex mt-2 sm:mt-0"> {/* Add margin for smaller screens */}
               <Button
                 onClick={prevPage}
                 variant="ghost"
@@ -202,48 +204,50 @@ function ProductsTable({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Select</TableHead>
-                  <TableHead>Application no of Journal TM</TableHead>
-                  <TableHead>Application no. of Our TM</TableHead>
-                  <TableHead>Journal TM</TableHead>
-                  <TableHead>Our TM</TableHead>
-                  <TableHead>Class</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {excelData.map((data, index) => (
-                  <TableRow key={index}>
-                    <TableHead>
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.has(index.toString())}
-                        onChange={() => handleRowSelect(index.toString())}
-                      />
-                    </TableHead>
-                    <TableHead>{data.applicationNoJournalTM}</TableHead>
-                    <TableHead>{data.applicationNoOurTM}</TableHead>
-                    <TableHead>{data.journalTM}</TableHead>
-                    <TableHead>
-                      {data.ourTM.map((ourTMValue, ourTMIndex) => (
-                        <div key={ourTMIndex} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={selectedUniqueOurTM.has(ourTMValue)}
-                            onChange={() => handleUniqueOurTMSelect(ourTMValue)}
-                            className="mr-2"
-                          />
-                          {ourTMValue}
-                        </div>
-                      ))}
-                    </TableHead>
-                    <TableHead>{data.class}</TableHead>
+            <div className="overflow-x-auto"> {/* Makes the table scrollable */}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Select</TableHead>
+                    <TableHead>Application no of Journal TM</TableHead>
+                    <TableHead>Application no. of Our TM</TableHead>
+                    <TableHead>Journal TM</TableHead>
+                    <TableHead>Our TM</TableHead>
+                    <TableHead>Class</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {excelData.map((data, index) => (
+                    <TableRow key={index}>
+                      <TableHead>
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.has(index.toString())}
+                          onChange={() => handleRowSelect(index.toString())}
+                        />
+                      </TableHead>
+                      <TableHead>{data.applicationNoJournalTM}</TableHead>
+                      <TableHead>{data.applicationNoOurTM}</TableHead>
+                      <TableHead>{data.journalTM}</TableHead>
+                      <TableHead>
+                        {data.ourTM.map((ourTMValue, ourTMIndex) => (
+                          <div key={ourTMIndex} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedUniqueOurTM.has(ourTMValue)}
+                              onChange={() => handleUniqueOurTMSelect(ourTMValue)}
+                              className="mr-2"
+                            />
+                            {ourTMValue}
+                          </div>
+                        ))}
+                      </TableHead>
+                      <TableHead>{data.class}</TableHead>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
             <Button

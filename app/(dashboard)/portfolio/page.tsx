@@ -28,7 +28,7 @@ interface TrademarkEntry {
 // The TrademarkTable component definition
 const TrademarkTable = ({ trademarks }: { trademarks: TrademarkEntry[] }) => {
   return (
-    <Card>
+    <Card className="overflow-x-auto"> {/* Enable horizontal scrolling on small screens */}
       <CardHeader>
         <CardTitle>Trademark Table</CardTitle>
       </CardHeader>
@@ -80,20 +80,24 @@ const CompanySelectionComponent = () => {
   };
 
   return (
-    <div>
+    <div className="p-4"> {/* Add padding for smaller devices */}
       {/* Add New Trademark Section */}
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Add New Trademark</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
             <Input
               value={applicationId}
               onChange={(e) => setApplicationId(e.target.value)}
               placeholder="Enter Application ID"
+              className="flex-1" // Allow the input to grow
             />
-            <Button onClick={addTrademark} className="bg-black text-white hover:bg-gray-800 transition-all duration-300">
+            <Button
+              onClick={addTrademark}
+              className="bg-black text-white hover:bg-gray-800 transition-all duration-300"
+            >
               Add New Trademark
             </Button>
           </div>

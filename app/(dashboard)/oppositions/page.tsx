@@ -32,9 +32,12 @@ const ReportViewer = () => {
         <CardContent>
           <div className="space-y-4">
             {reports.map((report) => (
-              <div key={report.title} className="flex justify-between items-center bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300">
+              <div
+                key={report.title}
+                className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300"
+              >
                 <span className="font-medium">{report.title}</span>
-                <div className="flex space-x-2">
+                <div className="flex space-x-2 mt-2 sm:mt-0"> {/* Stack on smaller screens */}
                   <Button
                     onClick={() => window.open(report.url, '_blank')}
                     className="bg-blue-600 text-white hover:bg-blue-500 transition-all duration-300"
