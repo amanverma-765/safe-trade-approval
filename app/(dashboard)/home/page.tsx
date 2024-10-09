@@ -286,8 +286,13 @@ const HomePage = () => {
   const totalJournals = journals.length;
 
   return (
-    <div>
-      <ProductsTable journals={journals.slice(offset, offset + 5)} offset={offset} totalJournals={totalJournals} />
+    <div className="container mx-auto mt-8">
+      <ProductsTable journals={journals} offset={offset} totalJournals={totalJournals} />
+
+      {/* Footer with Copyright */}
+      <footer className="mt-8 text-center text-gray-500 text-xs">
+        © 2024 Yatri Cloud. All rights reserved.
+      </footer>
     </div>
   );
 };
