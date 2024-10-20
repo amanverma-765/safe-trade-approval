@@ -63,8 +63,8 @@ class LatestJournalScraper(
                             )
 
                             // File path and directory management
-                            val actualFilePath = System.getProperty("user.home") + "/staFiles/$journalNumber-${name.replace(" ", "")}"
-                            val tempDirectory = File(System.getProperty("user.home") + "/staFiles/")
+                            val actualFilePath = System.getProperty("user.home") + "/sta/staFiles/$journalNumber-${name.replace(" ", "")}"
+                            val tempDirectory = File(System.getProperty("user.home") + "/sta/staFiles/")
 
                             // Ensure the directory exists
                             if (!tempDirectory.exists()) {

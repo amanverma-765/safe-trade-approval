@@ -25,17 +25,13 @@ class TrademarkService(
 
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
 
-    private suspend fun fetchTrademarkData(appid: String, journalName: String? = null): Trademark {
+    suspend fun scrapeTrademark(appid: String, isOurTrademark: Boolean): Trademark {
         if (appid.length > 8) {
             logger.error("Application number is too long")
             throw NoSuchElementException("Application Id is too long")
         }
-
         return withContext(Dispatchers.IO) {
-            if (journalName != null) {
-                dynamicJournalTmRepo.findByApplicationNumber(journalName, appid)
-                    ?: throw NoSuchElementException("No trademark found for appId: $appid in journal: $journalName")
-            } else {
+            if (isOurTrademark) {
                 val trademark = ourTrademarkRepo.findByApplicationNumber(appid)?.toTrademark()
 
                 if (trademark != null) {
@@ -49,21 +45,11 @@ class TrademarkService(
                         throw NoSuchElementException("No trademark found for appId: $appid after scraping")
                     }
                 }
+            } else {
+                staScraper.scrapeByAppId(appId = appid)
+                    ?: throw NoSuchElementException("No trademark found for appId: $appid in journal after scraping")
             }
         }
-    }
-
-
-    suspend fun scrapeOurTmByApplicationId(appid: String): Trademark = coroutineScope {
-        fetchTrademarkData(appid)
-    }
-
-    suspend fun scrapeJournalTmByApplicationId(
-        journalNumber: String,
-        appid: String
-    ): Trademark = coroutineScope {
-        val journalName = "journal_$journalNumber"
-        fetchTrademarkData(appid, journalName)
     }
 
     suspend fun getLatestJournals(): List<LatestJournal> = coroutineScope {

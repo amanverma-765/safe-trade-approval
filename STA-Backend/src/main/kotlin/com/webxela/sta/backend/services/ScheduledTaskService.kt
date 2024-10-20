@@ -50,7 +50,7 @@ class ScheduledTaskService(
                     val tableName = "journal_${journals.first().journalNumber}"
 
                     val savedFilePathList = journals.map { journal ->
-                        System.getProperty("user.home") + "/staFiles/${journal.journalNumber}-${journal.fileName!!.replace(" ", "")}"
+                        System.getProperty("user.home") + "/sta/staFiles/${journal.journalNumber}-${journal.fileName!!.replace(" ", "")}"
                     }
 
                     journalData.addAll(staScraper.scrapeByJournalPath(savedFilePathList))

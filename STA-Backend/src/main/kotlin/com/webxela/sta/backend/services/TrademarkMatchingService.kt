@@ -4,6 +4,7 @@ import com.webxela.sta.backend.domain.model.MatchingTrademark
 import com.webxela.sta.backend.repo.DynamicJournalTmRepo
 import com.webxela.sta.backend.repo.MatchingTrademarkRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
+import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -21,21 +22,19 @@ class TrademarkMatchingService(
 
     suspend fun findMatchingTrademarks(journalNumbers: List<String>) = withContext(Dispatchers.IO) {
         try {
+
+            val allOurTrademark = ourTrademarkRepo.findAll()
+            if (allOurTrademark.isEmpty()) {
+                throw NoSuchElementException("Our trademark is empty")
+            }
+
             journalNumbers.forEach { journalNumber ->
-//                val matchingTableName = "matching_$journalNumber"
-
-//                if (matchingTrademarkRepo.tableExists(matchingTableName)) {
-//                    logger.info("Matching for journal $journalNumber is already done")
-//                    return@forEach
-//                }
-
                 val journalTableName = "journal_$journalNumber"
                 val journalTrademarks = dynamicJournalTmRepo.findAll(journalTableName)
                 val allMatchingTrademarks = mutableListOf<MatchingTrademark>()
 
                 journalTrademarks.forEach { journalTrademark ->
                     val ourTrademarks = ourTrademarkRepo.findByTmClass(journalTrademark.tmClass)
-
                     val similarTrademarks = ourTrademarks.filter {
                         isNameSimilar(journalTrademark.tmAppliedFor, it.tmAppliedFor)
                     }
@@ -59,7 +58,6 @@ class TrademarkMatchingService(
                 }
             }
             return@withContext getMatchingResult(journalNumbers)
-
         } catch (ex: Exception) {
             logger.error("Error while matching the table", ex)
             throw ex
@@ -70,7 +68,6 @@ class TrademarkMatchingService(
         ourTm: String,
         journalTm: String,
     ): Boolean {
-
         val ourTmWords = cleanTm(ourTm.lowercase().split(" "))
         val journalTmWords = cleanTm(journalTm.lowercase().split(" "))
 
