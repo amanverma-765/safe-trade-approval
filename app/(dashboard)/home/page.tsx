@@ -115,9 +115,9 @@ function ProductsTable({
 
     }
 
-    const fetchJournalTm = async (appId: string, journalNum: string) => {
+    const fetchJournalTm = async (appId: string) => {
       try {
-        const response = await fetch(`${url}/scrape/journal/application/${appId}/${journalNum}`);
+        const response = await fetch(`${url}/scrape/journal/application/${appId}`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -132,7 +132,7 @@ function ProductsTable({
     const fetchMatchingReport = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${url}/matchTrademarks/${query}`);
+        const response = await fetch(`${url}/match_trademarks/${query}`);
 
         if (!response.ok) {
           const errorResponse: ErrorResponse = await response.json();
@@ -148,7 +148,7 @@ function ProductsTable({
                 return await fetchOurTm(tm);
               })
             );
-            const journalTm = fetchJournalTm(item.journalAppNumber, item.journalNumber)
+            const journalTm = fetchJournalTm(item.journalAppNumber)
             return {
               applicationNoJournalTM: item.journalAppNumber,
               applicationNoOurTM: item.ourTrademarkAppNumbers,
