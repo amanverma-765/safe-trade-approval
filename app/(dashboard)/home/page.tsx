@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   TableHead,
   TableRow,
@@ -19,6 +19,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import CircularLoader from '@/components/ui/loader';
 
 // Define the type for the Journal entries
 interface JournalEntry {
@@ -28,13 +29,15 @@ interface JournalEntry {
 }
 
 // Define the type for the table that shows after generating Excel
-interface ExcelData {
+interface MatchingData {
   applicationNoJournalTM: string; // Application no of Journal TM
-  applicationNoOurTM: string; // Application no of Our TM
+  applicationNoOurTM: string[]; // Application no of Our TM
   journalTM: string; // Journal TM
   ourTM: string[]; // Our TM (multiple values)
   class: string; // Class
 }
+
+const url = process.env.NEXT_PUBLIC_API_URL;
 
 // Function to handle Excel file generation
 const generateExcel = (selectedJournals: JournalEntry[]) => {
@@ -56,9 +59,10 @@ function ProductsTable({
   const journalsPerPage = 5;
 
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [excelData, setExcelData] = useState<ExcelData[]>([]);
+  const [matchingData, setMatchingData] = useState<MatchingData[]>([]);
   const [uniqueOurTM, setUniqueOurTM] = useState<Set<string>>(new Set());
   const [selectedUniqueOurTM, setSelectedUniqueOurTM] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   function prevPage() {
     router.push(`/?offset=${Math.max(offset - journalsPerPage, 0)}`, { scroll: false });
@@ -80,24 +84,90 @@ function ProductsTable({
     });
   };
 
-  const handleGenerateExcel = () => {
+  const handleSearchReport = () => {
+
     const selectedJournals = journals.filter(journal => selectedRows.has(journal.journalNo));
+    if (selectedJournals.length == 0) {
+      alert("At least one Journal should be selected");
+      return
+    }
+    let query = ""
+    selectedJournals.forEach((item, index) => {
+      if (index == 0) query += `${item.journalNo}`; else query += `&${item.journalNo}`;
+    })
 
-    const preparedExcelData: ExcelData[] = selectedJournals.map((journal) => ({
-      applicationNoJournalTM: journal.journalNo,
-      applicationNoOurTM: '12345', // Placeholder
-      journalTM: 'TM-001', // Placeholder
-      ourTM: ['Our-TM-001', 'Our-TM-002'], // Example
-      class: 'Class A', // Placeholder
-    }));
+    const fetchOurTm = async (appId: string) => {
+      try {
+        const response = await fetch(`${url}/scrape/our/application/${appId}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data["tmAppliedFor"]
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      }
 
-    setExcelData(preparedExcelData);
+    }
 
-    const allOurTM = new Set<string>();
-    preparedExcelData.forEach(data => {
-      data.ourTM.forEach(ourTMValue => allOurTM.add(ourTMValue));
-    });
-    setUniqueOurTM(allOurTM);
+    const fetchJournalTm = async (appId: string, journalNum: string) => {
+      try {
+        const response = await fetch(`${url}/scrape/journal/application/${appId}/${journalNum}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        return data["tmAppliedFor"]
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      }
+    }
+
+
+    const fetchMatchingReport = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${url}/matchTrademarks/${query}`);
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        const mappedData: MatchingData[] = await Promise.all(
+          data.map(async (item: { journalAppNumber: string; ourTrademarkAppNumbers: Array<string>; tmClass: string; journalNumber: string }) => {
+            const ourTmAppIdList = await Promise.all(
+              item.ourTrademarkAppNumbers.map(async (tm) => {
+                return await fetchOurTm(tm);
+              })
+            );
+            const journalTm = fetchJournalTm(item.journalAppNumber, item.journalNumber)
+            return {
+              applicationNoJournalTM: item.journalAppNumber,
+              applicationNoOurTM: item.ourTrademarkAppNumbers,
+              journalTM: journalTm,
+              ourTM: ourTmAppIdList,
+              class: item.tmClass,
+            };
+          })
+        );
+
+        setMatchingData(mappedData);
+
+        const allOurTM = new Set<string>();
+        mappedData.forEach(data => {
+          data.ourTM.forEach(ourTMValue => allOurTM.add(ourTMValue));
+        });
+        setUniqueOurTM(allOurTM);
+
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      } finally {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 200);
+      }
+    };
+    fetchMatchingReport()
   };
 
   const handleGenerateIndividualOpposition = () => {
@@ -119,15 +189,17 @@ function ProductsTable({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Latest Search Report</CardTitle>
-          <CardDescription>
-            Download Excel | Search Report from Previous Journal
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto"> {/* Makes the table scrollable */}
+      {isLoading ? (
+        <CircularLoader />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Latest Search Report</CardTitle>
+            <CardDescription>
+              Download Excel | Search Report from Previous Journal
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -154,48 +226,47 @@ function ProductsTable({
                 ))}
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row justify-between items-center">
-          <Button
-            onClick={handleGenerateExcel}
-            className="bg-black text-white hover:bg-gray-800 transition-all duration-300 mr-4"
-          >
-            Generate Search Report
-          </Button>
-          <form className="flex flex-col sm:flex-row items-center w-full justify-between">
-            <div className="text-xs text-muted-foreground">
-              Showing{' '}
-              <strong>
-                {Math.min(offset, totalJournals) + 1}-{Math.min(offset + journalsPerPage, totalJournals)}
-              </strong>{' '}
-              of <strong>{totalJournals}</strong> journals
-            </div>
-            <div className="flex mt-2 sm:mt-0"> {/* Add margin for smaller screens */}
-              <Button
-                onClick={prevPage}
-                variant="ghost"
-                size="sm"
-                disabled={offset === 0}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Prev
-              </Button>
-              <Button
-                onClick={nextPage}
-                variant="ghost"
-                size="sm"
-                disabled={offset + journalsPerPage >= totalJournals}
-              >
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </form>
-        </CardFooter>
-      </Card>
-
-      {excelData.length > 0 && (
+          </CardContent>
+          <CardFooter className="flex justify-between items-center">
+            <Button
+              onClick={handleSearchReport}
+              className="bg-black text-white hover:bg-gray-800 transition-all duration-300 mr-4"
+            >
+              Generate Search Report
+            </Button>
+            <form className="flex items-center w-full justify-between">
+              <div className="text-xs text-muted-foreground">
+                Showing{' '}
+                <strong>
+                  {Math.min(offset, totalJournals) + 1}-{Math.min(offset + journalsPerPage, totalJournals)}
+                </strong>{' '}
+                of <strong>{totalJournals}</strong> journals
+              </div>
+              <div className="flex">
+                <Button
+                  onClick={prevPage}
+                  variant="ghost"
+                  size="sm"
+                  disabled={offset === 0}
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Prev
+                </Button>
+                <Button
+                  onClick={nextPage}
+                  variant="ghost"
+                  size="sm"
+                  disabled={offset + journalsPerPage >= totalJournals}
+                >
+                  Next
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </form>
+          </CardFooter>
+        </Card>
+      )}
+      {matchingData.length > 0 && (
         <Card className="mt-4">
           <CardHeader>
             <CardTitle>Generated Search Reports</CardTitle>
@@ -204,50 +275,54 @@ function ProductsTable({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto"> {/* Makes the table scrollable */}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Select</TableHead>
-                    <TableHead>Application no of Journal TM</TableHead>
-                    <TableHead>Application no. of Our TM</TableHead>
-                    <TableHead>Journal TM</TableHead>
-                    <TableHead>Our TM</TableHead>
-                    <TableHead>Class</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Select</TableHead>
+                  <TableHead>Application no of Journal TM</TableHead>
+                  <TableHead>Application no. of Our TM</TableHead>
+                  <TableHead>Journal TM</TableHead>
+                  <TableHead>Our TM</TableHead>
+                  <TableHead>Class</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {matchingData.map((data, index) => (
+                  <TableRow key={index}>
+                    <TableHead>
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.has(index.toString())}
+                        onChange={() => handleRowSelect(index.toString())}
+                      />
+                    </TableHead>
+                    <TableHead>{data.applicationNoJournalTM}</TableHead>
+                    <TableHead>
+                      {data.applicationNoOurTM.map((ourTmAppId, ourTmIndex) => (
+                        <div key={ourTmIndex} className="flex items-center">
+                          {ourTmAppId}
+                        </div>
+                      ))}
+                    </TableHead>
+                    <TableHead>{data.journalTM}</TableHead>
+                    <TableHead>
+                      {data.ourTM.map((ourTMValue, ourTMIndex) => (
+                        <div key={ourTMIndex} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedUniqueOurTM.has(ourTMValue)}
+                            onChange={() => handleUniqueOurTMSelect(ourTMValue)}
+                            className="mr-2"
+                          />
+                          {ourTMValue}
+                        </div>
+                      ))}
+                    </TableHead>
+                    <TableHead>{data.class}</TableHead>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {excelData.map((data, index) => (
-                    <TableRow key={index}>
-                      <TableHead>
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.has(index.toString())}
-                          onChange={() => handleRowSelect(index.toString())}
-                        />
-                      </TableHead>
-                      <TableHead>{data.applicationNoJournalTM}</TableHead>
-                      <TableHead>{data.applicationNoOurTM}</TableHead>
-                      <TableHead>{data.journalTM}</TableHead>
-                      <TableHead>
-                        {data.ourTM.map((ourTMValue, ourTMIndex) => (
-                          <div key={ourTMIndex} className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedUniqueOurTM.has(ourTMValue)}
-                              onChange={() => handleUniqueOurTMSelect(ourTMValue)}
-                              className="mr-2"
-                            />
-                            {ourTMValue}
-                          </div>
-                        ))}
-                      </TableHead>
-                      <TableHead>{data.class}</TableHead>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
             <Button
@@ -267,34 +342,55 @@ function ProductsTable({
   );
 }
 
+
 // HomePage component definition
 const HomePage = () => {
-  const journals: JournalEntry[] = [
-    { journalNo: 'J-1000', dateOfPublication: '2023-01-01', lastDate: '2023-01-15' },
-    { journalNo: 'J-1001', dateOfPublication: '2023-02-01', lastDate: '2023-02-15' },
-    { journalNo: 'J-1002', dateOfPublication: '2023-03-01', lastDate: '2023-03-15' },
-    { journalNo: 'J-1003', dateOfPublication: '2023-04-01', lastDate: '2023-04-15' },
-    { journalNo: 'J-1004', dateOfPublication: '2023-05-01', lastDate: '2023-05-15' },
-    { journalNo: 'J-1005', dateOfPublication: '2023-06-01', lastDate: '2023-06-15' },
-    { journalNo: 'J-1006', dateOfPublication: '2023-07-01', lastDate: '2023-07-15' },
-    { journalNo: 'J-1007', dateOfPublication: '2023-08-01', lastDate: '2023-08-15' },
-    { journalNo: 'J-1008', dateOfPublication: '2023-09-01', lastDate: '2023-09-15' },
-    { journalNo: 'J-1009', dateOfPublication: '2023-10-01', lastDate: '2023-10-15' },
-  ];
 
-  const offset = 0; // Set this to the appropriate offset for your application
+  const [loading, setLoading] = useState<boolean>(false)
+  const [journals, setJournals] = useState<JournalEntry[]>([]);
+
+  useEffect(() => {
+    const fetchJournals = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(url + "/get/latest_journals");
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        const mappedJournals: JournalEntry[] = data.map((item: { journalNumber: any; dateOfPublication: any; dateOfAvailability: any; }) => ({
+          journalNo: item.journalNumber,
+          dateOfPublication: item.dateOfPublication,
+          lastDate: item.dateOfAvailability
+        }));
+
+        setJournals(mappedJournals);
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      } finally {
+        setTimeout(() => {
+          setLoading(false);
+        }, 200);
+      }
+    };
+
+    fetchJournals();
+  }, []);
+
+  const offset = 0;
   const totalJournals = journals.length;
 
   return (
-    <div className="container mx-auto mt-8">
-      <ProductsTable journals={journals} offset={offset} totalJournals={totalJournals} />
-
-      {/* Footer with Copyright */}
-      <footer className="mt-8 text-center text-gray-500 text-xs">
-        © 2024 Yatri Cloud. All rights reserved.
-      </footer>
+    <div>
+      {loading ? (
+        <CircularLoader />
+      ) : (
+        <ProductsTable journals={journals.slice(offset, offset + 5)} offset={offset} totalJournals={totalJournals} />
+      )}
     </div>
   );
+
 };
 
 export default HomePage;

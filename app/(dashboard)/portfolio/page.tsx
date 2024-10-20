@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   TableHead,
   TableRow,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import CircularLoader from '@/components/ui/loader';
 
 // Define the type for the Trademark entries
 interface TrademarkEntry {
@@ -25,10 +26,15 @@ interface TrademarkEntry {
   status: string;
 }
 
+interface ErrorResponse {
+  message: string,
+  status: number
+}
+
 // The TrademarkTable component definition
 const TrademarkTable = ({ trademarks }: { trademarks: TrademarkEntry[] }) => {
   return (
-    <Card className="overflow-x-auto"> {/* Enable horizontal scrolling on small screens */}
+    <Card>
       <CardHeader>
         <CardTitle>Trademark Table</CardTitle>
       </CardHeader>
@@ -43,7 +49,7 @@ const TrademarkTable = ({ trademarks }: { trademarks: TrademarkEntry[] }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {trademarks.map((trademark) => (
+            {trademarks.toReversed().map((trademark) => (
               <TableRow key={trademark.applicationNo}>
                 <TableHead>{trademark.applicationNo}</TableHead>
                 <TableHead>{trademark.trademark}</TableHead>
@@ -62,50 +68,100 @@ const TrademarkTable = ({ trademarks }: { trademarks: TrademarkEntry[] }) => {
 const CompanySelectionComponent = () => {
   const [applicationId, setApplicationId] = useState<string>(''); // Store input value for Application ID
   const [trademarks, setTrademarks] = useState<TrademarkEntry[]>([]); // Store trademark data
+  const [loading, setLoading] = useState<boolean>(false);
+  const url = process.env.NEXT_PUBLIC_API_URL;
 
   // Function to handle adding new trademarks
-  const addTrademark = () => {
-    if (applicationId.trim() === '') return;
+  const addTrademark = async () => {
+    if (applicationId.trim() === '') {
+      alert("This field can't be empty");
+      return;
+    }
 
-    const newTrademark: TrademarkEntry = {
-      applicationNo: applicationId,
-      trademark: 'Sample Trademark', // Placeholder data
-      classNo: '35', // Placeholder data
-      status: 'Formalities Chk Pass' // Placeholder status
-    };
+    setLoading(true);
+    const finalUrl = `${url}/scrape/our/application/${applicationId}`
 
-    // Add new trademark to the list
-    setTrademarks([...trademarks, newTrademark]);
-    setApplicationId(''); // Clear the input field
+    try {
+      const response = await fetch(finalUrl);
+
+      if (!response.ok) {
+        let errorResponse: ErrorResponse = await response.json()
+        const errorMessage = `Error: ${response.status} ${errorResponse.message}`;
+        alert(errorMessage)
+        throw new Error(errorMessage);
+      }
+      const data = await response.json();
+      console.log("Response data:", data);
+    } catch (error) {
+      console.error('Error during fetch operation:', error);
+    } finally {
+      setTimeout(() => {
+        setLoading(false)
+      }, 200);
+    }
   };
 
+  useEffect(() => {
+
+    if (loading) {
+      setApplicationId("Loading...")
+    } else {
+      setApplicationId("")
+    }
+
+    const finalUrl = url + '/get/our_trademarks'
+
+    fetch(finalUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const mappedTrademarks: TrademarkEntry[] = data.map((item: { applicationNumber: any; tmAppliedFor: any; tmClass: any; status: any; }) => ({
+          applicationNo: item.applicationNumber,
+          trademark: item.tmAppliedFor,
+          classNo: item.tmClass,
+          status: item.status
+        }));
+
+        setTrademarks(mappedTrademarks);
+
+      })
+      .catch((error) => console.error('There was a problem with the fetch operation:', error))
+      .finally(() => {
+
+      })
+  }, [loading])
+
   return (
-    <div className="p-4"> {/* Add padding for smaller devices */}
+    <div>
       {/* Add New Trademark Section */}
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Add New Trademark</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
+          <div className="flex items-center space-x-2">
             <Input
               value={applicationId}
               onChange={(e) => setApplicationId(e.target.value)}
               placeholder="Enter Application ID"
-              className="flex-1" // Allow the input to grow
             />
-            <Button
-              onClick={addTrademark}
-              className="bg-black text-white hover:bg-gray-800 transition-all duration-300"
-            >
+            <Button onClick={addTrademark} className="bg-black text-white hover:bg-gray-800 transition-all duration-300">
               Add New Trademark
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Trademark Table */}
-      <TrademarkTable trademarks={trademarks} />
+      {/* Show Loader if loading is true */}
+      {loading ? (
+        <CircularLoader />
+      ) : (
+        <TrademarkTable trademarks={trademarks} />
+      )}
     </div>
   );
 };

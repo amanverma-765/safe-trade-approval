@@ -28,12 +28,10 @@ export function User({ user }: { user: any }) { // Expect the user prop
       {/* Notification Icon */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
             {/* Notification dot if there are unread notifications */}
-            {hasUnread && (
-              <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-            )}
+            {hasUnread && <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -75,6 +73,10 @@ export function User({ user }: { user: any }) { // Expect the user prop
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          {/* <DropdownMenuSeparator />
+          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem>Support</DropdownMenuItem>
+          <DropdownMenuSeparator /> */}
           {user ? (
             <DropdownMenuItem>
               <form action="/api/signout" method="post">
