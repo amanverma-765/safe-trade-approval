@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=sta-db'
+      - 'POSTGRES_PASSWORD=T9qBkfe6XHiijggv1gpxbKUB'
+      - 'POSTGRES_USER=admin@sta'
+    ports:
+      - '5432'
