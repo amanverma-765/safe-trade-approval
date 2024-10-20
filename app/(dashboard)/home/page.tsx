@@ -37,6 +37,11 @@ interface MatchingData {
   class: string; // Class
 }
 
+interface ErrorResponse {
+  message: string,
+  status: number
+}
+
 const url = process.env.NEXT_PUBLIC_API_URL;
 
 // Function to handle Excel file generation
@@ -130,6 +135,9 @@ function ProductsTable({
         const response = await fetch(`${url}/matchTrademarks/${query}`);
 
         if (!response.ok) {
+          const errorResponse: ErrorResponse = await response.json();
+          const errorMessage = `Error: ${errorResponse.status} ${errorResponse.message}`;
+          alert(errorMessage)
           throw new Error('Network response was not ok');
         }
         const data = await response.json();
