@@ -108,6 +108,7 @@ class LatestJournalScraper(
 
         } catch (ex: Exception) {
             logger.error("Error while fetching latest journal ${ex.message}")
+            throw ex
         }
         return journals
     }

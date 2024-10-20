@@ -3,6 +3,7 @@ package com.webxela.sta.backend.controller
 import com.webxela.sta.backend.domain.model.LatestJournal
 import com.webxela.sta.backend.domain.model.MatchingTrademark
 import com.webxela.sta.backend.domain.model.Trademark
+import com.webxela.sta.backend.services.ScheduledTaskService
 import com.webxela.sta.backend.services.TrademarkMatchingService
 import com.webxela.sta.backend.services.TrademarkService
 import org.springframework.http.ResponseEntity
@@ -13,7 +14,8 @@ import org.springframework.web.bind.annotation.*
 @CrossOrigin(origins = ["http://localhost:3000"])
 class TrademarkController(
     private val trademarkService: TrademarkService,
-    private val trademarkMatchingService: TrademarkMatchingService
+    private val trademarkMatchingService: TrademarkMatchingService,
+    private val scheduledTaskService: ScheduledTaskService
 ) {
 
     @GetMapping("/get/latest_journals")
@@ -62,4 +64,17 @@ class TrademarkController(
         val matchingResult = trademarkMatchingService.getMatchingResult(journalList)
         return ResponseEntity.ok(matchingResult)
     }
+
+    @GetMapping("/startScheduleTask")
+    suspend fun startScheduleTask(): ResponseEntity<String> {
+        scheduledTaskService.runTaskManually()
+        return ResponseEntity.ok("Schedule task finished successfully")
+    }
+
+//    @GetMapping("/startScheduleTask")
+//    suspend fun generateReport(): ResponseEntity<String> {
+//        scheduledTaskService.runTaskManually()
+//        return ResponseEntity.ok("Schedule task finished successfully")
+//    }
+
 }

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        code {
+            background-color: #eee;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<h1>API Documentation for Trademark Service</h1>
+
+<p>This document provides a detailed overview of the API endpoints available for the Trademark Service.</p>
+
+<h2>Base URL</h2>
+<p><code>http://localhost:8080/api/v1/sta</code></p>
+
+<h2>Endpoints</h2>
+
+<h3>1. Get Latest Journals</h3>
+<p><strong>GET</strong> <code>/get/latest_journals</code></p>
+<p>Fetches a list of the latest journals.</p>
+
+<h4>Response</h4>
+<pre>
+Response Body:
+[
+    {
+        "journalId": 1,
+        "journalNumber": "JN-2023-001",
+        "dateOfPublication": "2023-01-01",
+        "dateOfAvailability": "2023-01-15",
+        "filePath": "/path/to/journal/file",
+        "fileName": "JN-2023-001.pdf"
+    },
+    {
+        "journalId": 2,
+        "journalNumber": "JN-2023-002",
+        "dateOfPublication": "2023-02-01",
+        "dateOfAvailability": "2023-02-15",
+        "filePath": "/path/to/journal/file",
+        "fileName": "JN-2023-002.pdf"
+    }
+]
+</pre>
+
+<h3>2. Get Our Trademarks</h3>
+<p><strong>GET</strong> <code>/get/our_trademarks</code></p>
+<p>Retrieves a list of trademarks owned by the user.</p>
+
+<h4>Response</h4>
+<pre>
+Response Body:
+[
+    {
+        "tmId": 1,
+        "status": "Registered",
+        "applicationNumber": "TM-2023-001",
+        "tmClass": "Class 25",
+        "dateOfApplication": "2023-01-01",
+        "appropriateOffice": "Trademark Office",
+        "state": "Active",
+        "country": "India",
+        "filingMode": "Online",
+        "tmAppliedFor": "Brand Name",
+        "tmCategory": "Goods",
+        "tmType": "Wordmark",
+        "userDetails": "John Doe",
+        "certDetail": "Certificate No. 12345",
+        "validUpTo": "2033-01-01",
+        "proprietorName": "John Doe",
+        "proprietorAddress": "123 Main St, City, Country",
+        "emailId": "johndoe@example.com",
+        "agentName": "Agent Name",
+        "agentAddress": "456 Agent St, City, Country",
+        "publicationDetails": "Published in Journal 1"
+    }
+]
+</pre>
+
+<h3>3. Scrape Journal Trademark by Application ID</h3>
+<p><strong>GET</strong> <code>/scrape/journal/application/{applicationId}/{journalNumber}</code></p>
+<p>Scrapes trademark information from a journal based on the provided application ID and journal number.</p>
+
+<h4>Path Variables</h4>
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>applicationId</td>
+        <td>The ID of the trademark application.</td>
+    </tr>
+    <tr>
+        <td>journalNumber</td>
+        <td>The journal number from which to scrape the trademark.</td>
+    </tr>
+</table>
+
+<h4>Response</h4>
+<pre>
+Response Body:
+{
+    "tmId": 1,
+    "status": "Pending",
+    "applicationNumber": "TM-2023-005",
+    "tmClass": "Class 35",
+    "dateOfApplication": "2023-03-01",
+    "appropriateOffice": "Trademark Office",
+    "state": "Pending",
+    "country": "India",
+    "filingMode": "Online",
+    "tmAppliedFor": "New Brand",
+    "tmCategory": "Services",
+    "tmType": "Logo",
+    "userDetails": "Jane Doe",
+    "certDetail": null,
+    "validUpTo": "2023-03-01",
+    "proprietorName": "Jane Doe",
+    "proprietorAddress": "789 Proprietor St, City, Country",
+    "emailId": "janedoe@example.com",
+    "agentName": null,
+    "agentAddress": null,
+    "publicationDetails": "Not Published Yet"
+}
+</pre>
+
+<h3>4. Scrape Our Trademark by Application ID</h3>
+<p><strong>GET</strong> <code>/scrape/our/application/{applicationId}</code></p>
+<p>Scrapes trademark information for a specific application ID owned by the user.</p>
+
+<h4>Path Variable</h4>
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>applicationId</td>
+        <td>The ID of the user's trademark application.</td>
+    </tr>
+</table>
+
+<h4>Response</h4>
+<pre>
+Response Body:
+{
+    "tmId": 2,
+    "status": "Registered",
+    "applicationNumber": "TM-2023-002",
+    "tmClass": "Class 9",
+    "dateOfApplication": "2023-02-01",
+    "appropriateOffice": "Trademark Office",
+    "state": "Active",
+    "country": "India",
+    "filingMode": "Online",
+    "tmAppliedFor": "Another Brand",
+    "tmCategory": "Goods",
+    "tmType": "Wordmark",
+    "userDetails": "Jane Doe",
+    "certDetail": "Certificate No. 54321",
+    "validUpTo": "2033-02-01",
+    "proprietorName": "Jane Doe",
+    "proprietorAddress": "789 Proprietor St, City, Country",
+    "emailId": "janedoe@example.com",
+    "agentName": "Agent Name",
+    "agentAddress": "456 Agent St, City, Country",
+    "publicationDetails": "Published in Journal 2"
+}
+</pre>
+
+<h3>5. Match Trademarks</h3>
+<p><strong>GET</strong> <code>/matchTrademarks/{journalNumbers}</code></p>
+<p>Finds matching trademarks based on a list of journal numbers.</p>
+
+<h4>Path Variable</h4>
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>journalNumbers</td>
+        <td>A string of journal numbers separated by "&".</td>
+    </tr>
+</table>
+
+<h4>Response</h4>
+<pre>
+Response Body:
+[
+    {
+        "matchResultId": 1,
+        "journalAppNumber": "JN-2023-001",
+        "ourTrademarkAppNumbers": ["TM-2023-001", "TM-2023-002"],
+        "tmClass": "Class 25",
+        "journalNumber": "JN-2023-001"
+    },
+    {
+        "matchResultId": 2,
+        "journalAppNumber": "JN-2023-002",
+        "ourTrademarkAppNumbers": ["TM-2023-003"],
+        "tmClass": "Class 9",
+        "journalNumber": "JN-2023-002"
+    }
+]
+</pre>
+
+<h3>6. Get Matching Result</h3>
+<p><strong>GET</strong> <code>/get/matchingResult/{journalNumbers}</code></p>
+<p>Retrieves matching results for the specified journal numbers.</p>
+
+<h4>Path Variable</h4>
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>journalNumbers</td>
+        <td>A string of journal numbers separated by "&".</td>
+    </tr>
+</table>
+
+<h4>Response</h4>
+<pre>
+Response Body:
+[
+    {
+        "matchResultId": 1,
+        "journalAppNumber": "JN-2023-001",
+        "ourTrademarkAppNumbers": ["TM-2023-001", "TM-2023-002"],
+        "tmClass": "Class 25",
+        "journalNumber": "JN-2023-001"
+    },
+    {
+        "matchResultId": 2,
+        "journalAppNumber": "JN-2023-002",
+        "ourTrademarkAppNumbers": ["TM-2023-003"],
+        "tmClass": "Class 9",
+        "journalNumber": "JN-2023-002"
+    }
+]
+</pre>
+
+</body>
+</html>

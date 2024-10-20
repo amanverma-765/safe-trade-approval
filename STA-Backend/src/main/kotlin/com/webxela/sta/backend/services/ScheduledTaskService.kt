@@ -67,4 +67,8 @@ class ScheduledTaskService(
             }
         }
     }
+
+    fun runTaskManually() {
+        scheduleLatestJournalScraping()
+    }
 }
