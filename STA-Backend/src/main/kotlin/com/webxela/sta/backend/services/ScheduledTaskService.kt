@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
+
+
 @Service
 class ScheduledTaskService(
     private val latestJournalScraper: LatestJournalScraper,
@@ -34,9 +36,11 @@ class ScheduledTaskService(
                 try {
                     logger.info("Scheduled task attempt ${retryCount + 1} is started")
                     val journals = latestJournalScraper.fetchJournal()
+
                     val lastJournalNumber = withContext(Dispatchers.IO) {
                         latestJournalRepo.findLastJournalNumber()
                     }
+
                     if (lastJournalNumber == journals.last().journalNumber) {
                         logger.info("Journal Already Exists...")
                         return@runBlocking
@@ -44,24 +48,27 @@ class ScheduledTaskService(
 
                     val journalData: MutableList<Trademark> = mutableListOf()
                     val tableName = "journal_${journals.first().journalNumber}"
+
                     val savedFilePathList = journals.map { journal ->
-                        "temp/${journal.journalNumber}-${journal.fileName!!.replace(" ", "")}"
+                        System.getProperty("user.home") + "/staFiles/${journal.journalNumber}-${journal.fileName!!.replace(" ", "")}"
                     }
+
                     journalData.addAll(staScraper.scrapeByJournalPath(savedFilePathList))
                     dynamicJournalTmRepo.addAll(tableName, journalData)
                     latestJournalRepo.save(journals.first().toJournalEntity())
-                    logger.info("Scheduled task attempt ${retryCount + 1} is finished successfully")
 
-                    success = true // Task succeeded, exit the loop
+                    logger.info("Scheduled task attempt ${retryCount + 1} is finished successfully")
+                    success = true
 
                 } catch (ex: Exception) {
                     retryCount++
                     logger.error("Error during scheduled scraping on attempt ${retryCount}: ", ex)
 
-                    if (retryCount < maxRetries) {
-                        logger.info("Retrying... ($retryCount/$maxRetries)")
-                    } else {
+                    if (retryCount == maxRetries) {
                         logger.error("Max retry attempts reached. Task failed.")
+                        throw RuntimeException("Scheduled task failed after $maxRetries attempts.")
+                    } else {
+                        logger.info("Retrying... ($retryCount/$maxRetries)")
                     }
                 }
             }
@@ -72,3 +79,4 @@ class ScheduledTaskService(
         scheduleLatestJournalScraping()
     }
 }
+
