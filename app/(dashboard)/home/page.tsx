@@ -21,6 +21,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
 
+
 // Define the type for the Journal entries
 interface JournalEntry {
   journalNo: string;
@@ -328,6 +329,7 @@ function ProductsTable({
                     </TableHead>
                     <TableHead>{data.class}</TableHead>
                   </TableRow>
+
                 ))}
               </TableBody>
             </Table>
@@ -361,6 +363,7 @@ const HomePage = () => {
     const fetchJournals = async () => {
       try {
         setLoading(true);
+
         const response = await fetch(url + "/get/latest_journals");
 
         if (!response.ok) {
@@ -392,7 +395,7 @@ const HomePage = () => {
   return (
     <div>
       {loading ? (
-        <CircularLoader />
+        <CircularLoader className='h-screen'></CircularLoader>
       ) : (
         <ProductsTable journals={journals.slice(offset, offset + 5)} offset={offset} totalJournals={totalJournals} />
       )}
