@@ -395,7 +395,7 @@ const HomePage = () => {
   return (
     <div>
       {loading ? (
-        <CircularLoader className='h-screen'></CircularLoader>
+        <CircularLoader/>
       ) : (
         <ProductsTable journals={journals.slice(offset, offset + 5)} offset={offset} totalJournals={totalJournals} />
       )}
