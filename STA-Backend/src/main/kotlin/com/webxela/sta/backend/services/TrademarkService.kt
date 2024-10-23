@@ -59,4 +59,10 @@ class TrademarkService(
     suspend fun getOurTrademarks(): List<Trademark> = coroutineScope {
         ourTrademarkRepo.findAll().map { it.toTrademark() }
     }
+
+    suspend fun deleteOurTrademark(appid: String) {
+        withContext(Dispatchers.IO) {
+            ourTrademarkRepo.deleteByApplicationNumber(appid)
+        }
+    }
 }

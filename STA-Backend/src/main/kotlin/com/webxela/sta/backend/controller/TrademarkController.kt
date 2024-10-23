@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/sta")
-@CrossOrigin(origins = ["http://localhost:3000"])
+@CrossOrigin(origins = ["http://localhost:3000", "http://52.172.161.167:3000"])
 class TrademarkController(
     private val trademarkService: TrademarkService,
     private val trademarkMatchingService: TrademarkMatchingService,
@@ -107,11 +107,24 @@ class TrademarkController(
         }
     }
 
-    @GetMapping("/generate_report")
-    suspend fun generateReport(): ResponseEntity<Any> {
+//    @GetMapping("/generate_report")
+//    suspend fun generateReport(): ResponseEntity<Any> {
+//        try {
+//            scheduledTaskService.runTaskManually()
+//            return ResponseEntity.ok("Schedule task finished successfully")
+//        } catch (ex: Exception) {
+//            val error = ErrorResponse(message = ex.message)
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+//        }
+//    }
+
+    @GetMapping("/delete/our/application/{applicationId}")
+    suspend fun deleteOurTrademark(
+        @PathVariable applicationId: Long,
+    ): ResponseEntity<Any> {
         try {
-            scheduledTaskService.runTaskManually()
-            return ResponseEntity.ok("Schedule task finished successfully")
+            trademarkService.deleteOurTrademark(applicationId.toString())
+            return ResponseEntity.ok("Successfully deleted $applicationId")
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)

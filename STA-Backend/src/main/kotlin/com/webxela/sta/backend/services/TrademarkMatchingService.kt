@@ -1,10 +1,10 @@
 package com.webxela.sta.backend.services
 
+import com.webxela.sta.backend.domain.model.ErrorResponse
 import com.webxela.sta.backend.domain.model.MatchingTrademark
 import com.webxela.sta.backend.repo.DynamicJournalTmRepo
 import com.webxela.sta.backend.repo.MatchingTrademarkRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
-import io.ktor.client.statement.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -34,20 +34,40 @@ class TrademarkMatchingService(
                 val allMatchingTrademarks = mutableListOf<MatchingTrademark>()
 
                 journalTrademarks.forEach { journalTrademark ->
-                    val ourTrademarks = ourTrademarkRepo.findByTmClass(journalTrademark.tmClass)
-                    val similarTrademarks = ourTrademarks.filter {
-                        isNameSimilar(journalTrademark.tmAppliedFor, it.tmAppliedFor)
+                    val tmWordList = splitTrademarkNames(journalTrademark.tmAppliedFor)
+                    val ourMatchedTmNumbers = mutableSetOf<String>()
+                    tmWordList.forEach { tmWord ->
+                        val ourMatchingTrademarks = ourTrademarkRepo.findByTmClassAndTmAppliedForContainingIgnoreCase(
+                            tmClass = journalTrademark.tmClass,
+                            tmAppliedFor = tmWord
+                        )
+                        if (ourMatchingTrademarks.isNotEmpty()) {
+                           ourMatchedTmNumbers.addAll(ourMatchingTrademarks.map { it.applicationNumber })
+                        }
                     }
 
-                    if (similarTrademarks.isNotEmpty()) {
+                    if (ourMatchedTmNumbers.isNotEmpty()) {
                         val matchingTrademark = MatchingTrademark(
                             journalAppNumber = journalTrademark.applicationNumber,
-                            ourTrademarkAppNumbers = similarTrademarks.map { it.applicationNumber },
+                            ourTrademarkAppNumbers = ourMatchedTmNumbers.toList(),
                             tmClass = journalTrademark.tmClass,
                             journalNumber = journalNumber
                         )
                         allMatchingTrademarks.add(matchingTrademark)
                     }
+
+//                    val similarTrademarks = ourTrademarks.filter {
+//                        isNameSimilar(journalTrademark.tmAppliedFor, it.tmAppliedFor)
+//                    }
+//                    if (similarTrademarks.isNotEmpty()) {
+//                        val matchingTrademark = MatchingTrademark(
+//                            journalAppNumber = journalTrademark.applicationNumber,
+//                            ourTrademarkAppNumbers = similarTrademarks.map { it.applicationNumber },
+//                            tmClass = journalTrademark.tmClass,
+//                            journalNumber = journalNumber
+//                        )
+//                        allMatchingTrademarks.add(matchingTrademark)
+//                    }
                 }
 
                 if (allMatchingTrademarks.isNotEmpty()) {
@@ -57,39 +77,37 @@ class TrademarkMatchingService(
                     )
                 }
             }
-            return@withContext getMatchingResult(journalNumbers)
+            if (allOurTrademark.isNotEmpty()) {
+                return@withContext getMatchingResult(journalNumbers)
+            } else {
+                throw Error("No matching result was found")
+            }
         } catch (ex: Exception) {
             logger.error("Error while matching the table", ex)
             throw ex
         }
     }
 
-    private fun isNameSimilar(
-        ourTm: String,
-        journalTm: String,
-    ): Boolean {
-        val ourTmWords = cleanTm(ourTm.lowercase().split(" "))
-        val journalTmWords = cleanTm(journalTm.lowercase().split(" "))
 
-        // Remove stop words before comparison
-        val filteredOurTmWords = ourTmWords.filter { it !in stopWords }
-        val filteredJournalTmWords = journalTmWords.filter { it !in stopWords }
-
-        // Ignore words shorter than 3 characters
-        val significantOurTmWords = filteredOurTmWords.filter { it.length > 3 }
-        val significantJournalTmWords = filteredJournalTmWords.filter { it.length > 3 }
-
-        // Compare the remaining words
-        for (existingWord in significantOurTmWords) {
-            if (significantJournalTmWords.any {
-                    it.contains(existingWord) || existingWord.contains(it)
-                }
-            ) {
-                return true
-            }
+    private fun splitTrademarkNames(trademarkName: String): List<String> {
+        val tmWords = trademarkName.lowercase().split(" ")
+        val cleanedTrademarks = mutableListOf<String>()
+        tmWords.forEach { tm ->
+            val cleanedTm = tm.replace("(", " ")
+                .replace(")", " ")
+                .replace(".", " ")
+                .replace("\"", " ")
+                .replace(",", " ")
+                .replace("'", " ")
+                .trim()
+            cleanedTrademarks.add(cleanedTm)
         }
-        return false
+        val filteredCleanTmWords = cleanedTrademarks
+            .filter { it !in stopWords }
+            .filter { it.length > 3 }
+        return filteredCleanTmWords
     }
+
 
     private fun saveAllMatchingTrademarks(
         matchingTrademarks: List<MatchingTrademark>,
@@ -98,6 +116,7 @@ class TrademarkMatchingService(
         val matchingTableName = "matching_$journalNumber"
         matchingTrademarkRepo.replaceAll(tableName = matchingTableName, matchingTrademarks = matchingTrademarks)
     }
+
 
     suspend fun getMatchingResult(journalList: List<String>): List<MatchingTrademark> = coroutineScope {
         val matchedTrademarks = mutableListOf<MatchingTrademark>()
@@ -117,19 +136,6 @@ class TrademarkMatchingService(
         return@coroutineScope matchedTrademarks
     }
 
-    private fun cleanTm(trademarks: List<String>): List<String> {
-        val cleanedTrademarks = mutableListOf<String>()
-        trademarks.forEach { tm ->
-            val cleanedTm = tm.replace("(", " ")
-                .replace(")", " ")
-                .replace(".", " ")
-                .replace("\"", " ")
-                .replace(",", " ")
-                .trim()
-            cleanedTrademarks.add(cleanedTm)
-        }
-        return cleanedTrademarks
-    }
 
     val stopWords = listOf(
         "for", "the", "in", "and",
@@ -140,3 +146,4 @@ class TrademarkMatchingService(
         "by", "in", "/"
     )
 }
+
