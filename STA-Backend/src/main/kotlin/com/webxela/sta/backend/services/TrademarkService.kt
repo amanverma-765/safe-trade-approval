@@ -25,32 +25,28 @@ class TrademarkService(
 
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
 
-    suspend fun scrapeTrademark(appid: String, isOurTrademark: Boolean): Trademark {
-        if (appid.length > 8) {
-            logger.error("Application number is too long")
-            throw NoSuchElementException("Application Id is too long")
+    suspend fun scrapeTrademark(appId: String, isOurTrademark: Boolean): Trademark {
+        require(appId.length <= 8) {
+            logger.error("Application number $appId is too long")
+            "Application Id is too long"
         }
         return withContext(Dispatchers.IO) {
-            if (isOurTrademark) {
-                val trademark = ourTrademarkRepo.findByApplicationNumber(appid)?.toTrademark()
-
-                if (trademark != null) {
-                    trademark
-                } else {
-                    val trademarkData = staScraper.scrapeByAppId(appId = appid)
-                    if (trademarkData != null) {
-                        ourTrademarkRepo.save(trademarkData.toOurTrademarkEntity())
-                        trademarkData
-                    } else {
-                        throw NoSuchElementException("No trademark found for appId: $appid after scraping")
-                    }
-                }
+            val trademark = (if (isOurTrademark) {
+                ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
             } else {
-                staScraper.scrapeByAppId(appId = appid)
-                    ?: throw NoSuchElementException("No trademark found for appId: $appid in journal after scraping")
+                dynamicJournalTmRepo.findInAllTmEverywhere(appId)
+            }) ?: run {
+                val scrapedData = staScraper.scrapeByAppId(appId)
+                    ?: throw NoSuchElementException("No trademark found for appId: $appId after scraping")
+                if (isOurTrademark) {
+                    ourTrademarkRepo.save(scrapedData.toOurTrademarkEntity())
+                }
+                scrapedData
             }
+            trademark
         }
     }
+
 
     suspend fun getLatestJournals(): List<LatestJournal> = coroutineScope {
         latestJournalRepo.findAll().map { it.toJournal() }

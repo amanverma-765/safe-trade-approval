@@ -107,8 +107,8 @@ class TrademarkController(
         }
     }
 
-//    @GetMapping("/generate_report")
-//    suspend fun generateReport(): ResponseEntity<Any> {
+//    @PostMapping("/generate_report/{}")
+//    suspend fun generateReport(): ResponseEntity<List<Any>> {
 //        try {
 //            scheduledTaskService.runTaskManually()
 //            return ResponseEntity.ok("Schedule task finished successfully")

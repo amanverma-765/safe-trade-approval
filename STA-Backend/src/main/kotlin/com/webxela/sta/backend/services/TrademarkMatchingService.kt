@@ -42,7 +42,7 @@ class TrademarkMatchingService(
                             tmAppliedFor = tmWord
                         )
                         if (ourMatchingTrademarks.isNotEmpty()) {
-                           ourMatchedTmNumbers.addAll(ourMatchingTrademarks.map { it.applicationNumber })
+                            ourMatchedTmNumbers.addAll(ourMatchingTrademarks.map { it.applicationNumber })
                         }
                     }
 
@@ -55,19 +55,6 @@ class TrademarkMatchingService(
                         )
                         allMatchingTrademarks.add(matchingTrademark)
                     }
-
-//                    val similarTrademarks = ourTrademarks.filter {
-//                        isNameSimilar(journalTrademark.tmAppliedFor, it.tmAppliedFor)
-//                    }
-//                    if (similarTrademarks.isNotEmpty()) {
-//                        val matchingTrademark = MatchingTrademark(
-//                            journalAppNumber = journalTrademark.applicationNumber,
-//                            ourTrademarkAppNumbers = similarTrademarks.map { it.applicationNumber },
-//                            tmClass = journalTrademark.tmClass,
-//                            journalNumber = journalNumber
-//                        )
-//                        allMatchingTrademarks.add(matchingTrademark)
-//                    }
                 }
 
                 if (allMatchingTrademarks.isNotEmpty()) {

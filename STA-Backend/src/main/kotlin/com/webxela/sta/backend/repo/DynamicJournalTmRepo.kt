@@ -92,8 +92,6 @@ class DynamicJournalTmRepo {
     @Transactional
     fun findAll(tableName: String): List<Trademark> {
         return try {
-//            createTableIfNotExists(tableName)
-
             val query = """
             SELECT * FROM $tableName
             """.trimIndent()
@@ -126,8 +124,6 @@ class DynamicJournalTmRepo {
     @Transactional
     fun deleteByApplicationNumber(tableName: String, applicationNumber: String) {
         try {
-//            createTableIfNotExists(tableName)
-
             val query = """
             DELETE FROM $tableName WHERE application_number = :applicationNumber
             """.trimIndent()
@@ -140,4 +136,43 @@ class DynamicJournalTmRepo {
             throw ex
         }
     }
+
+    @Transactional
+    fun findInAllTmEverywhere(applicationNumber: String): Trademark? {
+        try {
+            val tableNamesQuery = """
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_name LIKE 'journal_%'
+        """.trimIndent()
+
+            val tableNames = entityManager.createNativeQuery(tableNamesQuery).resultList as List<String>
+
+            for (tableName in tableNames) {
+                try {
+                    val query = """
+                    SELECT * FROM $tableName WHERE application_number = :applicationNumber
+                """.trimIndent()
+
+                    val result = entityManager.createNativeQuery(query, Trademark::class.java)
+                        .setParameter("applicationNumber", applicationNumber)
+                        .singleResult as? Trademark
+
+                    if (result != null) {
+                        logger.info("Record found in table $tableName")
+                        return result
+                    }
+                } catch (ex: Exception) {
+                    logger.error("Error fetching record from $tableName", ex)
+                }
+            }
+            logger.info("No record found for application number $applicationNumber in any journal tables.")
+            return null
+
+        } catch (ex: Exception) {
+            logger.error("Error finding application number $applicationNumber in all journal tables", ex)
+            throw ex
+        }
+    }
+
 }
