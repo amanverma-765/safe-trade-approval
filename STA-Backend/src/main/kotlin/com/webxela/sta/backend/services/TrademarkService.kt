@@ -216,8 +216,17 @@ class TrademarkService(
             val finalPath = "$reportDir/$fileName"
             withContext(Dispatchers.IO) {
                 val filePath: Path = Paths.get(finalPath)
-                Files.deleteIfExists(filePath)
-                logger.info("File $fileName deleted successfully.")
+                if (Files.exists(filePath)) {
+                    try {
+                        Files.delete(filePath)
+                    } catch (ex: Exception) {
+                        logger.error("Failed to delete file at $finalPath. Error: ${ex.message}")
+                        throw Exception("Failed to delete report")
+                    }
+                } else {
+                    logger.warn("File $fileName does not exist at $finalPath.")
+                    throw Exception("File doesn't exist")
+                }
             }
             withContext(Dispatchers.IO) {
                 oppositionReportRepo.deleteById(reportId)
