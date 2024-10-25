@@ -14,7 +14,6 @@ import com.webxela.sta.backend.repo.LatestJournalRepo
 import com.webxela.sta.backend.repo.OppositionReportRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
 import com.webxela.sta.backend.scraper.StaScraper
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -29,8 +28,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.lang.model.element.UnknownElementException
-import kotlin.NoSuchElementException
 
 @Service
 class TrademarkService(
@@ -190,15 +187,14 @@ class TrademarkService(
         oppositionReportRepo.findAll().map { it.toOppositionReport() }
     }
 
-    suspend fun downloadReport(report: String): ByteArray {
+    suspend fun downloadReport(reportId: Long): ByteArray {
         try {
-            // checks if path is right
-            if (report.isBlank()) {
-                logger.error("Invalid Download Path")
-                throw NoSuchElementException("Invalid Download Path")
-            }
+            val fileName = withContext(Dispatchers.IO) {
+                oppositionReportRepo.findById(reportId).orElseThrow()
+            }.toOppositionReport().report
+
             val reportDir = System.getProperty("user.home") + "/sta/staFiles/reports"
-            val finalPath = "$reportDir/$report"
+            val finalPath = "$reportDir/$fileName"
             val file = Paths.get(finalPath).normalize().toAbsolutePath()
             return withContext(Dispatchers.IO) {
                 Files.readAllBytes(file)

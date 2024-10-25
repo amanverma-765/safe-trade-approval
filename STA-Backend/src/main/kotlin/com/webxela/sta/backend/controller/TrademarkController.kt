@@ -141,12 +141,12 @@ class TrademarkController(
         }
     }
 
-    @GetMapping("/get/download_report/{report}")
+    @GetMapping("/get/download_report/{reportId}")
     suspend fun downloadReport(
-        @PathVariable report: String
+        @PathVariable reportId: Long
     ): ResponseEntity<Any> {
         try {
-            val reportDoc = trademarkService.downloadReport(report)
+            val reportDoc = trademarkService.downloadReport(reportId)
             return ResponseEntity.ok(reportDoc)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
