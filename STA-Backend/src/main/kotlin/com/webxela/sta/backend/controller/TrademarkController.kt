@@ -1,9 +1,6 @@
 package com.webxela.sta.backend.controller
 
-import com.webxela.sta.backend.domain.model.ErrorResponse
-import com.webxela.sta.backend.domain.model.LatestJournal
-import com.webxela.sta.backend.domain.model.MatchingTrademark
-import com.webxela.sta.backend.domain.model.Trademark
+import com.webxela.sta.backend.domain.model.*
 import com.webxela.sta.backend.services.ScheduledTaskService
 import com.webxela.sta.backend.services.TrademarkMatchingService
 import com.webxela.sta.backend.services.TrademarkService
@@ -107,16 +104,18 @@ class TrademarkController(
         }
     }
 
-//    @PostMapping("/generate_report/{}")
-//    suspend fun generateReport(): ResponseEntity<List<Any>> {
-//        try {
-//            scheduledTaskService.runTaskManually()
-//            return ResponseEntity.ok("Schedule task finished successfully")
-//        } catch (ex: Exception) {
-//            val error = ErrorResponse(message = ex.message)
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
-//        }
-//    }
+    @PostMapping("/generate_report")
+    suspend fun generateReport(
+        @RequestBody reportGenRequest: ReportGenRequest
+    ): ResponseEntity<List<Any>> {
+        try {
+            val reports = trademarkService.generateReport(reportGenRequest)
+            return ResponseEntity.ok(reports)
+        } catch (ex: Exception) {
+            val error = ErrorResponse(message = ex.message)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
+        }
+    }
 
     @GetMapping("/delete/our/application/{applicationId}")
     suspend fun deleteOurTrademark(

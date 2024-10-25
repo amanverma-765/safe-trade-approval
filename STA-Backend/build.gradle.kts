@@ -51,6 +51,7 @@ dependencies {
     implementation("io.github.cdimascio:java-dotenv:5.2.2")
     implementation("commons-codec:commons-codec:1.17.1")
     implementation("org.apache.commons:commons-text:1.12.0")
+    implementation("org.apache.poi:poi-ooxml:5.3.0")
 }
 
 kotlin {

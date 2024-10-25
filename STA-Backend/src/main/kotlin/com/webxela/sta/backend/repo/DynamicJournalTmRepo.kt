@@ -105,9 +105,9 @@ class DynamicJournalTmRepo {
     }
 
     @Transactional
-    fun findByApplicationNumber(tableName: String, applicationNumber: String): Trademark? {
+    fun findByApplicationNumber(journalNumber: String, applicationNumber: String): Trademark? {
+        val tableName = "journal_$journalNumber"
         return try {
-
             val query = """
             SELECT * FROM $tableName WHERE application_number = :applicationNumber
             """.trimIndent()

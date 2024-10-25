@@ -11,4 +11,6 @@ interface LatestJournalRepo: JpaRepository<LatestJournalEntity, Long> {
     @Query("SELECT MAX(journalNumber) FROM LatestJournalEntity")
     fun findLastJournalNumber(): String?
 
+    fun findByJournalNumber(journalNumber: String): LatestJournalEntity
+
 }
