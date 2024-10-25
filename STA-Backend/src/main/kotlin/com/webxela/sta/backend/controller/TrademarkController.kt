@@ -130,4 +130,28 @@ class TrademarkController(
         }
     }
 
+    @GetMapping("/get/generated_reports")
+    suspend fun getGeneratedReports(): ResponseEntity<List<Any>> {
+        try {
+            val reports = trademarkService.getGeneratedReports()
+            return ResponseEntity.ok(reports)
+        } catch (ex: Exception) {
+            val error = ErrorResponse(message = ex.message)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
+        }
+    }
+
+    @GetMapping("/get/download_report/{report}")
+    suspend fun downloadReport(
+        @PathVariable report: String
+    ): ResponseEntity<Any> {
+        try {
+            val reportDoc = trademarkService.downloadReport(report)
+            return ResponseEntity.ok(reportDoc)
+        } catch (ex: Exception) {
+            val error = ErrorResponse(message = ex.message)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+        }
+    }
+
 }

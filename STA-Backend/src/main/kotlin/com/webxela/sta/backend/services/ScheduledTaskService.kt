@@ -2,7 +2,7 @@ package com.webxela.sta.backend.services
 
 import com.webxela.sta.backend.domain.mapper.LatestJournalMapper.toJournalEntity
 import com.webxela.sta.backend.domain.model.Trademark
-import com.webxela.sta.backend.repo.DynamicJournalTmRepo
+import com.webxela.sta.backend.repo.JournalTmRepo
 import com.webxela.sta.backend.repo.LatestJournalRepo
 import com.webxela.sta.backend.scraper.LatestJournalScraper
 import com.webxela.sta.backend.scraper.StaScraper
@@ -20,7 +20,7 @@ class ScheduledTaskService(
     private val latestJournalScraper: LatestJournalScraper,
     private val latestJournalRepo: LatestJournalRepo,
     private val staScraper: StaScraper,
-    private val dynamicJournalTmRepo: DynamicJournalTmRepo
+    private val dynamicJournalTmRepo: JournalTmRepo
 ) {
 
     private val logger = LoggerFactory.getLogger(ScheduledTaskService::class.java)

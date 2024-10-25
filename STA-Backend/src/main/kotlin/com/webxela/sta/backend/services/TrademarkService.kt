@@ -3,13 +3,18 @@ package com.webxela.sta.backend.services
 import com.webxela.sta.backend.domain.mapper.LatestJournalMapper.toJournal
 import com.webxela.sta.backend.domain.mapper.OurTrademarkMapper.toOurTrademarkEntity
 import com.webxela.sta.backend.domain.mapper.OurTrademarkMapper.toTrademark
+import com.webxela.sta.backend.domain.mapper.ReportMapping.toOppositionReport
+import com.webxela.sta.backend.domain.mapper.ReportMapping.toOppositionReportEntity
 import com.webxela.sta.backend.domain.model.LatestJournal
+import com.webxela.sta.backend.domain.model.OppositionReport
 import com.webxela.sta.backend.domain.model.ReportGenRequest
 import com.webxela.sta.backend.domain.model.Trademark
-import com.webxela.sta.backend.repo.DynamicJournalTmRepo
+import com.webxela.sta.backend.repo.JournalTmRepo
 import com.webxela.sta.backend.repo.LatestJournalRepo
+import com.webxela.sta.backend.repo.OppositionReportRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
 import com.webxela.sta.backend.scraper.StaScraper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
@@ -20,8 +25,11 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.lang.model.element.UnknownElementException
 import kotlin.NoSuchElementException
 
 @Service
@@ -29,7 +37,8 @@ class TrademarkService(
     private val latestJournalRepo: LatestJournalRepo,
     private val ourTrademarkRepo: OurTrademarkRepo,
     private val staScraper: StaScraper,
-    private val dynamicJournalTmRepo: DynamicJournalTmRepo
+    private val journalTmRepo: JournalTmRepo,
+    private val oppositionReportRepo: OppositionReportRepo
 ) {
 
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
@@ -43,7 +52,7 @@ class TrademarkService(
             val trademark = (if (isOurTrademark) {
                 ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
             } else {
-                dynamicJournalTmRepo.findInAllTmEverywhere(appId)
+                journalTmRepo.findInAllTmEverywhere(appId)
             }) ?: run {
                 val scrapedData = staScraper.scrapeByAppId(appId)
                     ?: throw NoSuchElementException("No trademark found for appId: $appId after scraping")
@@ -78,7 +87,7 @@ class TrademarkService(
             latestJournalRepo.findByJournalNumber(requestData.journalNumber).toJournal()
         }
         val journalTm = withContext(Dispatchers.IO) {
-            dynamicJournalTmRepo.findByApplicationNumber(
+            journalTmRepo.findByApplicationNumber(
                 journalNumber = requestData.journalNumber,
                 applicationNumber = requestData.journalAppId
             )
@@ -98,9 +107,9 @@ class TrademarkService(
         val templatePath = System.getProperty("user.home") + "/sta/staFiles/template.docx"
         val outputDir = System.getProperty("user.home") + "/sta/staFiles/reports"
 
-        requestData.ourAppIdList.forEach { appId ->
+        requestData.ourAppIdList.forEach { ourAppId ->
             val ourTm = withContext(Dispatchers.IO) {
-                ourTrademarkRepo.findByApplicationNumber(applicationNumber = appId)?.toTrademark()
+                ourTrademarkRepo.findByApplicationNumber(applicationNumber = ourAppId)?.toTrademark()
             }
 
             val replacements = commonReplacements + mapOf(
@@ -113,11 +122,18 @@ class TrademarkService(
             )
 
             val timestamp = SimpleDateFormat("yyyyMMddHHmmss").format(Date())
-            val outputPath = "$outputDir/${requestData.journalAppId}-$appId-$timestamp.docx"
+            val outputPath = "$outputDir/opposition_${requestData.journalAppId}-$ourAppId-$timestamp.docx"
             File(outputDir).mkdirs()
 
             val report = generateDocxReport(templatePath, replacements, outputPath)
             reportList.add(report)
+            val oppositionReport = OppositionReport(
+                journalNumber = requestData.journalNumber,
+                ourAppId = ourAppId,
+                journalAppId = requestData.journalAppId,
+                report = "opposition_${requestData.journalAppId}-$ourAppId-$timestamp.docx"
+            )
+            oppositionReportRepo.save(oppositionReport.toOppositionReportEntity())
         }
         return reportList
     }
@@ -129,7 +145,6 @@ class TrademarkService(
     ): ByteArray {
         FileInputStream(templatePath).use { inputStream ->
             XWPFDocument(inputStream).use { document ->
-                // Process paragraphs for placeholder replacements
                 document.paragraphs.forEach { paragraph ->
                     paragraph.runs.forEach { run ->
                         run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }?.let { text ->
@@ -142,35 +157,55 @@ class TrademarkService(
                     }
                 }
 
-                // Process tables for placeholder replacements
                 document.tables.forEach { table ->
                     table.rows.forEach { row ->
                         row.tableCells.forEach { cell ->
                             cell.paragraphs.forEach { paragraph ->
                                 paragraph.runs.forEach { run ->
-                                    run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }?.let { text ->
-                                        var modifiedText = text
-                                        replacements.forEach { (placeholder, replacement) ->
-                                            modifiedText = modifiedText.replace(placeholder, replacement)
+                                    run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }
+                                        ?.let { text ->
+                                            var modifiedText = text
+                                            replacements.forEach { (placeholder, replacement) ->
+                                                modifiedText = modifiedText.replace(placeholder, replacement)
+                                            }
+                                            run.setText(modifiedText, 0)
                                         }
-                                        run.setText(modifiedText, 0)
-                                    }
                                 }
                             }
                         }
                     }
                 }
-
-                // Write the modified document to the specified output path
                 FileOutputStream(outputPath).use { fileOutputStream ->
                     document.write(fileOutputStream)
                 }
-                // Return the document as a ByteArray
                 ByteArrayOutputStream().use { outputStream ->
                     document.write(outputStream)
                     return outputStream.toByteArray()
                 }
             }
+        }
+    }
+
+    suspend fun getGeneratedReports(): List<OppositionReport> = coroutineScope {
+        oppositionReportRepo.findAll().map { it.toOppositionReport() }
+    }
+
+    suspend fun downloadReport(report: String): ByteArray {
+        try {
+            // checks if path is right
+            if (report.isBlank()) {
+                logger.error("Invalid Download Path")
+                throw NoSuchElementException("Invalid Download Path")
+            }
+            val reportDir = System.getProperty("user.home") + "/sta/staFiles/reports"
+            val finalPath = "$reportDir/$report"
+            val file = Paths.get(finalPath).normalize().toAbsolutePath()
+            return withContext(Dispatchers.IO) {
+                Files.readAllBytes(file)
+            }
+        } catch (ex: Exception) {
+            logger.error("Failed to download report", ex)
+            throw IllegalAccessException("Failed to download report")
         }
     }
 }

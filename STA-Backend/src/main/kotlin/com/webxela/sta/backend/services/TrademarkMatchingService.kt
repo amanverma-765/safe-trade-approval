@@ -1,8 +1,7 @@
 package com.webxela.sta.backend.services
 
-import com.webxela.sta.backend.domain.model.ErrorResponse
 import com.webxela.sta.backend.domain.model.MatchingTrademark
-import com.webxela.sta.backend.repo.DynamicJournalTmRepo
+import com.webxela.sta.backend.repo.JournalTmRepo
 import com.webxela.sta.backend.repo.MatchingTrademarkRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +14,7 @@ import org.springframework.stereotype.Service
 class TrademarkMatchingService(
     private val matchingTrademarkRepo: MatchingTrademarkRepo,
     private val ourTrademarkRepo: OurTrademarkRepo,
-    private val dynamicJournalTmRepo: DynamicJournalTmRepo
+    private val journalTmRepo: JournalTmRepo
 ) {
 
     private val logger = LoggerFactory.getLogger(TrademarkMatchingService::class.java)
@@ -30,7 +29,7 @@ class TrademarkMatchingService(
 
             journalNumbers.forEach { journalNumber ->
                 val journalTableName = "journal_$journalNumber"
-                val journalTrademarks = dynamicJournalTmRepo.findAll(journalTableName)
+                val journalTrademarks = journalTmRepo.findAll(journalTableName)
                 val allMatchingTrademarks = mutableListOf<MatchingTrademark>()
 
                 journalTrademarks.forEach { journalTrademark ->

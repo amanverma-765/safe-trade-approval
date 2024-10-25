@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Repository
 
 @Repository
-class DynamicJournalTmRepo {
+class JournalTmRepo {
 
-    private val logger = LoggerFactory.getLogger(DynamicJournalTmRepo::class.java)
+    private val logger = LoggerFactory.getLogger(JournalTmRepo::class.java)
 
     @PersistenceContext
     private lateinit var entityManager: EntityManager
