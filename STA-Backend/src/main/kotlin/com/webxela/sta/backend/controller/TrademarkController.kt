@@ -154,4 +154,17 @@ class TrademarkController(
         }
     }
 
+    @GetMapping("/delete/report/{reportId}")
+    suspend fun deleteReport(
+        @PathVariable reportId: Long
+    ): ResponseEntity<Any> {
+        try {
+            trademarkService.deleteReport(reportId)
+            return ResponseEntity.ok("Report deleted successfully")
+        } catch (ex: Exception) {
+            val error = ErrorResponse(message = ex.message)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+        }
+    }
+
 }

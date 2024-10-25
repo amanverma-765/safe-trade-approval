@@ -25,6 +25,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
@@ -204,4 +205,29 @@ class TrademarkService(
             throw IllegalAccessException("Failed to download report")
         }
     }
+
+    suspend fun deleteReport(reportId: Long) = coroutineScope {
+        try {
+            val fileName = withContext(Dispatchers.IO) {
+                oppositionReportRepo.findById(reportId).orElseThrow()
+            }.toOppositionReport().report
+
+            val reportDir = System.getProperty("user.home") + "/sta/staFiles/reports"
+            val finalPath = "$reportDir/$fileName"
+            withContext(Dispatchers.IO) {
+                val filePath: Path = Paths.get(finalPath)
+                Files.deleteIfExists(filePath)
+                logger.info("File $fileName deleted successfully.")
+            }
+            withContext(Dispatchers.IO) {
+                oppositionReportRepo.deleteById(reportId)
+                logger.info("Report with ID $reportId deleted from repository.")
+            }
+
+        } catch (ex: Exception) {
+            logger.error("Failed to delete file: ", ex)
+            throw Exception("Failed to delete report")
+        }
+    }
+
 }
