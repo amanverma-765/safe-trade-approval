@@ -3,155 +3,229 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { title } from 'process';
 import DeleteButton from '@/components/ui/deleteButton';
 import CircularLoader from '@/components/ui/loader';
 
-// Define the type for the PDF report entries
 interface PDFReport {
   title: string;
-  report_id: string
+  report_id: string;
+  journal_number: string;
 }
 
 const url = process.env.NEXT_PUBLIC_API_URL;
 
-const ReportViewer = () => {
+const usePdfHandler = () => {
+  const [isPdfProcessing, setIsPdfProcessing] = useState(false);
 
-  const [reports, setReports] = useState<PDFReport[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
-  const [deleting, setDeleting] = useState<boolean>(false)
+  const getPdfViewerHTML = (pdfUrl: string): string => `
+    <!DOCTYPE html>
+    <html style="margin:0;padding:0;height:100%;" lang="en">
+      <head>
+        <title>PDF Viewer</title>
+        <style>
+          body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+          }
+          iframe {
+            display: block;
+            border: none;
+            width: 100vw;
+            height: 100vh;
+          }
+        </style>
+      </head>
+      <body>
+        <iframe src="${pdfUrl}"></iframe>
+      </body>
+    </html>
+  `;
 
-
-  const handleDownloadAndView = async (reportId: string, download: boolean = true) => {
+  const handlePdf = async (reportId: string, download: boolean = true) => {
     const fileUrl = `${url}/get/download_report/${reportId}`;
     let blobUrl: string | undefined;
+
     try {
-      setDeleting(true);
+      setIsPdfProcessing(true);
       const response = await fetch(fileUrl);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
       const blob = await response.blob();
-      blobUrl = URL.createObjectURL(blob);
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+      blobUrl = URL.createObjectURL(pdfBlob);
+
       if (download) {
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = `report_${reportId}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        downloadPdf(blobUrl, reportId);
       } else {
-        window.open(blobUrl, '_blank');
+        viewPdf(blobUrl);
       }
     } catch (error) {
       console.error('There was a problem with the fetch operation:', error);
     } finally {
       setTimeout(() => {
-        setDeleting(false);
+        setIsPdfProcessing(false);
       }, 200);
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
     }
   };
 
+  const downloadPdf = (blobUrl: string, reportId: string) => {
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `report_${reportId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  };
 
-  const handelDelete = (reportId: string) => {
-    const deleteUrl = `${url}/delete/report/${reportId}`
-    const deleteReport = async () => {
-      try {
-        setDeleting(true);
-        const response = await fetch(deleteUrl);
-        if (!response.ok) {
-          alert(response.body)
-          throw new Error('Network response was not ok');
-        }
-      } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
-      } finally {
-        setTimeout(() => {
-          setDeleting(false);
-        }, 200);
+  const viewPdf = (blobUrl: string) => {
+    const pdfWindow = window.open('');
+    if (pdfWindow) {
+      pdfWindow.document.write(getPdfViewerHTML(blobUrl));
+      pdfWindow.onbeforeunload = () => {
+        URL.revokeObjectURL(blobUrl);
+      };
+      return;
+    }
+    const tab = window.open(blobUrl, '_blank');
+    if (!tab) {
+      window.location.href = blobUrl;
+    }
+  };
+
+  return { handlePdf, isPdfProcessing };
+};
+
+const useReports = () => {
+  const [reports, setReports] = useState<PDFReport[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchReports = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${url}/get/generated_reports`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    };
-    deleteReport()
-  }
-
-  useEffect(() => {
-    const oppositionUrl = `${url}/get/generated_reports`
-    const fetchOppositionReport = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(oppositionUrl);
-        if (!response.ok) {
-          alert(response.body)
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        const mappedReport: PDFReport[] = data.map((item: { reportId: string; report: string; }) => ({
+      const data = await response.json();
+      const mappedReport: PDFReport[] = data.map(
+        (item: {
+          reportId: string;
+          report: string;
+          journalNumber: string;
+        }) => ({
           title: item.report,
           report_id: item.reportId,
-        }));
-        setReports(mappedReport)
-      } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
-      } finally {
-        setTimeout(() => {
-          setLoading(false);
-        }, 200);
+          journal_number: item.journalNumber
+        })
+      );
+      setReports(mappedReport);
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 200);
+    }
+  };
+
+  const handleDelete = async (reportId: string) => {
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`${url}/delete/report/${reportId}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    };
-    fetchOppositionReport()
-  }, [deleting])
+      await fetchReports(); // Refresh the list after deletion
+    } catch (error) {
+      console.error('There was a problem with the delete operation:', error);
+    } finally {
+      setTimeout(() => {
+        setIsDeleting(false);
+      }, 200);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  return { reports, isLoading, isDeleting, handleDelete };
+};
+
+// Report Card Component
+const ReportCard: React.FC<{
+  report: PDFReport;
+  onView: (reportId: string) => void;
+  onDownload: (reportId: string) => void;
+  onDelete: (reportId: string) => void;
+  disabled?: boolean;
+}> = ({ report, onView, onDownload, onDelete, disabled }) => (
+  <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300">
+    <span className="font-medium">{report.title}</span>
+    <span>{report.journal_number}</span>
+    <div className="flex space-x-2">
+      <Button
+        onClick={() => onView(report.report_id)}
+        className="bg-blue-600 text-white hover:bg-blue-500 transition-all duration-300"
+        disabled={disabled}
+      >
+        View
+      </Button>
+      <Button
+        onClick={() => onDownload(report.report_id)}
+        className="bg-green-600 text-white hover:bg-green-500 transition-all duration-300"
+        disabled={disabled}
+      >
+        Download
+      </Button>
+      <div>
+        <DeleteButton onClick={() => onDelete(report.report_id)} />
+      </div>
+    </div>
+  </div>
+);
+
+const ReportViewer = () => {
+  const { reports, isLoading, isDeleting, handleDelete } = useReports();
+  const { handlePdf, isPdfProcessing } = usePdfHandler();
+
+  const isProcessing = isLoading || isDeleting || isPdfProcessing;
 
   return (
     <div>
-      {
-        deleting || loading ? (
-          <CircularLoader />
-        ) : (
-          <div className="flex flex-col w-full h-full bg-gray-100 p-4">
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold text-left">Reports</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {reports.map((report) => (
-                    <div key={report.title} className="flex justify-between items-center bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300">
-                      <span className="font-medium">{report.title}</span>
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => handleDownloadAndView(report.report_id, false)}
-                          className="bg-blue-600 text-white hover:bg-blue-500 transition-all duration-300"
-                        >
-                          View
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            handleDownloadAndView(report.report_id);
-                          }}
-                          className="bg-green-600 text-white hover:bg-green-500 transition-all duration-300"
-                        >
-                          Download
-                        </Button>
-                        <div>
-                          <DeleteButton onClick={() =>
-                            handelDelete(report.report_id)
-                          } />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )
-      }
+      {isProcessing ? (
+        <CircularLoader />
+      ) : (
+        <div className="flex flex-col w-full h-full bg-gray-100 p-4">
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold text-left">
+                Reports
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {reports.toReversed().map((report) => (
+                  <ReportCard
+                    key={report.report_id}
+                    report={report}
+                    onView={(id) => handlePdf(id, false)}
+                    onDownload={(id) => handlePdf(id, true)}
+                    onDelete={handleDelete}
+                    disabled={isProcessing}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
-
-
   );
 };
 
