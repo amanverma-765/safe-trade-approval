@@ -120,7 +120,7 @@ class TrademarkService(
                 "{ourPr}" to (ourTm?.proprietorName ?: "NA")
             )
 
-            val timestamp = SimpleDateFormat("yyyyMMddHHmmss").format(Date())
+            val timestamp = SimpleDateFormat("HHmmssSSS").format(Date())
             val fileName = "opposition_${requestData.journalAppId}-$ourAppId-$timestamp.pdf"
             val outputPath = "$outputDir/$fileName"
             File(outputDir).mkdirs()
