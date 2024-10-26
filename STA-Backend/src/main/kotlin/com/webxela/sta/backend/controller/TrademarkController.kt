@@ -104,19 +104,6 @@ class TrademarkController(
         }
     }
 
-    @PostMapping("/generate_report")
-    suspend fun generateReport(
-        @RequestBody reportGenRequest: ReportGenRequest
-    ): ResponseEntity<List<Any>> {
-        try {
-            val reports = trademarkService.generateReport(reportGenRequest)
-            return ResponseEntity.ok(reports)
-        } catch (ex: Exception) {
-            val error = ErrorResponse(message = ex.message)
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
-        }
-    }
-
     @GetMapping("/delete/our/application/{applicationId}")
     suspend fun deleteOurTrademark(
         @PathVariable applicationId: Long,
@@ -127,6 +114,19 @@ class TrademarkController(
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+        }
+    }
+
+    @PostMapping("/generate_report")
+    suspend fun generateReport(
+        @RequestBody reportGenRequest: ReportGenRequest
+    ): ResponseEntity<List<Any>> {
+        try {
+            val reports = trademarkService.generateReport(reportGenRequest)
+            return ResponseEntity.ok(reports)
+        } catch (ex: Exception) {
+            val error = ErrorResponse(message = ex.message)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
         }
     }
 

@@ -2,6 +2,8 @@
 
 # Define the name of your JAR file (replace with your actual JAR name)
 JAR_NAME="STA-Backend-0.0.1-SNAPSHOT.jar"
+echo "Deleting old jar file"
+rm -rf build/libs/$JAR_NAME
 
 # Run the build command
 ./gradlew build
