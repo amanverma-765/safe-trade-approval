@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
+import { POST } from 'app/api/auth/[...nextauth]/route';
 
 
 // Define the type for the Journal entries
@@ -27,6 +28,12 @@ interface JournalEntry {
   journalNo: string;
   dateOfPublication: string;
   lastDate: string;
+}
+
+interface ReportRequest {
+  journalAppId: string,
+  journalNumber: string,
+  ourAppIdList: Array<string>
 }
 
 // Define the type for the table that shows after generating Excel
@@ -180,8 +187,38 @@ function ProductsTable({
   };
 
   const handleGenerateIndividualOpposition = () => {
-    console.log('Generating individual opposition for selected Our TM:', Array.from(selectedUniqueOurTM));
-    // Implement the logic for generating individual opposition here
+    // const oppositionUrl = `${url}/generate_report`
+
+    // const reportRequest: ReportRequest = {
+    //   journalAppId: "some",
+    //   journalNumber: "some",
+    //   ourAppIdList: [
+    //     "",
+    //     ""
+    //   ]
+    // };
+
+    // const generateReport = async () => {
+    //   try {
+    //     // setLoading(true);
+    //     const response = await fetch(url + "/get/latest_journals", {
+    //       method: 'POST',
+    //       body: JSON.stringify(reportRequest)
+    //     });
+    //     if (!response.ok) {
+    //       alert(response.body)
+    //       throw new Error('Network response was not ok');
+    //     }
+    //     const data = await response.json();
+    //   } catch (error) {
+    //     console.error('There was a problem with the fetch operation:', error);
+    //   } finally {
+    //     setTimeout(() => {
+    //       // setLoading(false);
+    //     }, 200);
+    //   }
+    // };
+    // generateReport()
   };
 
   const handleUniqueOurTMSelect = (ourTMValue: string) => {
@@ -329,7 +366,6 @@ function ProductsTable({
                     </TableHead>
                     <TableHead>{data.class}</TableHead>
                   </TableRow>
-
                 ))}
               </TableBody>
             </Table>
@@ -395,7 +431,7 @@ const HomePage = () => {
   return (
     <div>
       {loading ? (
-        <CircularLoader/>
+        <CircularLoader />
       ) : (
         <ProductsTable journals={journals.slice(offset, offset + 5)} offset={offset} totalJournals={totalJournals} />
       )}

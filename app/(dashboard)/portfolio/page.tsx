@@ -21,6 +21,8 @@ import { Delete } from 'lucide-react';
 import DeleteButton from '@/components/ui/deleteButton';
 
 // Define the type for the Trademark entries
+
+
 interface TrademarkEntry {
   applicationNo: string;
   trademark: string;
