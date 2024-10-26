@@ -14,16 +14,13 @@ import com.webxela.sta.backend.repo.LatestJournalRepo
 import com.webxela.sta.backend.repo.OppositionReportRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
 import com.webxela.sta.backend.scraper.StaScraper
+import com.webxela.sta.backend.utils.generatePdfReport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import org.apache.poi.xwpf.usermodel.XWPFDocument
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -78,6 +75,10 @@ class TrademarkService(
         }
     }
 
+    suspend fun getGeneratedReports(): List<OppositionReport> = coroutineScope {
+        oppositionReportRepo.findAll().map { it.toOppositionReport() }
+    }
+
     suspend fun generateReport(requestData: ReportGenRequest): List<ByteArray> {
         val reportList = mutableListOf<ByteArray>()
 
@@ -120,72 +121,21 @@ class TrademarkService(
             )
 
             val timestamp = SimpleDateFormat("yyyyMMddHHmmss").format(Date())
-            val outputPath = "$outputDir/opposition_${requestData.journalAppId}-$ourAppId-$timestamp.docx"
+            val fileName = "opposition_${requestData.journalAppId}-$ourAppId-$timestamp.pdf"
+            val outputPath = "$outputDir/$fileName"
             File(outputDir).mkdirs()
 
-            val report = generateDocxReport(templatePath, replacements, outputPath)
+            val report = generatePdfReport(templatePath, replacements, outputPath)
             reportList.add(report)
             val oppositionReport = OppositionReport(
                 journalNumber = requestData.journalNumber,
                 ourAppId = ourAppId,
                 journalAppId = requestData.journalAppId,
-                report = "opposition_${requestData.journalAppId}-$ourAppId-$timestamp.docx"
+                report = fileName
             )
             oppositionReportRepo.save(oppositionReport.toOppositionReportEntity())
         }
         return reportList
-    }
-
-    private fun generateDocxReport(
-        templatePath: String,
-        replacements: Map<String, String>,
-        outputPath: String
-    ): ByteArray {
-        FileInputStream(templatePath).use { inputStream ->
-            XWPFDocument(inputStream).use { document ->
-                document.paragraphs.forEach { paragraph ->
-                    paragraph.runs.forEach { run ->
-                        run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }?.let { text ->
-                            var modifiedText = text
-                            replacements.forEach { (placeholder, replacement) ->
-                                modifiedText = modifiedText.replace(placeholder, replacement)
-                            }
-                            run.setText(modifiedText, 0)
-                        }
-                    }
-                }
-
-                document.tables.forEach { table ->
-                    table.rows.forEach { row ->
-                        row.tableCells.forEach { cell ->
-                            cell.paragraphs.forEach { paragraph ->
-                                paragraph.runs.forEach { run ->
-                                    run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }
-                                        ?.let { text ->
-                                            var modifiedText = text
-                                            replacements.forEach { (placeholder, replacement) ->
-                                                modifiedText = modifiedText.replace(placeholder, replacement)
-                                            }
-                                            run.setText(modifiedText, 0)
-                                        }
-                                }
-                            }
-                        }
-                    }
-                }
-                FileOutputStream(outputPath).use { fileOutputStream ->
-                    document.write(fileOutputStream)
-                }
-                ByteArrayOutputStream().use { outputStream ->
-                    document.write(outputStream)
-                    return outputStream.toByteArray()
-                }
-            }
-        }
-    }
-
-    suspend fun getGeneratedReports(): List<OppositionReport> = coroutineScope {
-        oppositionReportRepo.findAll().map { it.toOppositionReport() }
     }
 
     suspend fun downloadReport(reportId: Long): ByteArray {
@@ -220,7 +170,7 @@ class TrademarkService(
                     try {
                         Files.delete(filePath)
                     } catch (ex: Exception) {
-                        logger.error("Failed to delete file at $finalPath. Error: ${ex.message}")
+                        logger.error("Failed to delete file at $finalPath. Error: ", ex)
                         throw Exception("Failed to delete report")
                     }
                 } else {

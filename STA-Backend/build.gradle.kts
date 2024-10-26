@@ -46,12 +46,13 @@ dependencies {
     implementation("org.apache.pdfbox:pdfbox:3.0.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.hibernate:hibernate-validator:8.0.1.Final")
-    // Logging dependencies
     implementation("org.springframework.boot:spring-boot-starter-logging")
     implementation("io.github.cdimascio:java-dotenv:5.2.2")
     implementation("commons-codec:commons-codec:1.17.1")
     implementation("org.apache.commons:commons-text:1.12.0")
+    implementation("org.apache.poi:poi:5.3.0")
     implementation("org.apache.poi:poi-ooxml:5.3.0")
+    implementation("fr.opensagres.xdocreport:fr.opensagres.poi.xwpf.converter.pdf:2.1.0")
 }
 
 kotlin {
