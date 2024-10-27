@@ -4,9 +4,12 @@ import com.webxela.sta.backend.domain.model.*
 import com.webxela.sta.backend.services.ScheduledTaskService
 import com.webxela.sta.backend.services.TrademarkMatchingService
 import com.webxela.sta.backend.services.TrademarkService
+import com.webxela.sta.backend.utils.isExcelFile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.codec.multipart.FilePart
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/v1/sta")
@@ -64,6 +67,26 @@ class TrademarkController(
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
         }
     }
+
+
+    @PostMapping("/scrape/our/excel")
+    suspend fun scrapeOurTmByExcel(
+        @RequestPart("excelFile")
+        excelFile: FilePart
+    ): ResponseEntity<Any> {
+        return try {
+            if (!isExcelFile(excelFile)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ErrorResponse("Invalid file type. Please upload an Excel file."))
+            }
+            trademarkService.scrapeOurTmByExcel(excelFile)
+            ResponseEntity.ok("Excel trademark scraped successfully")
+        } catch (ex: Exception) {
+            val error = ErrorResponse(message = ex.message)
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+        }
+    }
+
 
     @GetMapping("/match_trademarks/{journalNumbers}")
     suspend fun matchTheTrademark(

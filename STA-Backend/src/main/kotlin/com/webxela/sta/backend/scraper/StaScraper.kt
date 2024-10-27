@@ -11,11 +11,8 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.apache.pdfbox.Loader
-import org.apache.pdfbox.text.PDFTextStripper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.io.File
 import java.util.concurrent.Executors
 
 @Component
@@ -70,55 +67,40 @@ class StaScraper(
     }
 
     // Scrape trademarks by journal file path
-    suspend fun scrapeByJournalPath(
-        savedFilePathList: List<String>,
+    suspend fun scrapeTrademarkByList(
+        applicationNumberList: List<String>,
         threadCount: Int = 50
     ): List<Trademark> {
+
         val tData = mutableListOf<Trademark>()
-        val allNumbers = mutableListOf<String>()
-
-        try {
-            savedFilePathList.forEach { path ->
-                Loader.loadPDF(File(path)).use { document ->
-                    val pdfStripper = PDFTextStripper()
-                    val text = pdfStripper.getText(document)
-                    val regex = "\\d{7}".toRegex()
-                    val numbers = regex.findAll(text).map { it.value }.toList()
-
-                    allNumbers.addAll(numbers)
-                }
-            }
-
-            println("There are total ${allNumbers.size} application ids")
-
-            val chunks: List<List<String>> = allNumbers.chunked(allNumbers.size / threadCount)
-
-            val threadPool = Executors.newFixedThreadPool(threadCount).asCoroutineDispatcher()
-
-            runBlocking {
-                chunks.forEach { chunk ->
-                    launch(threadPool) {
-                        async {
-                            val httpClient = httpClientConfig.createHttpClient()
-                            val captcha = getCaptcha(httpClient)  // Get new CAPTCHA for each chunk/request
-                            chunk.forEach { number ->
-                                val trademark = scrapeTrademark(httpClient, number, captcha)
-                                trademark?.let {
-                                    tData.add(it)
-                                }
-                            }
-                            httpClient.close()
-                        }.await()
-                    }
-                }
-            }
-
-            println("All ${tData.size} journal trademarks scraped")
-
-        } catch (ex: Exception) {
-            logger.error("Error while scraping journal at $savedFilePathList: ", ex)
-            throw ex
+        val chunks: List<List<String>> = if (applicationNumberList.size <= threadCount) {
+            listOf(applicationNumberList)
+        } else {
+            applicationNumberList.chunked((applicationNumberList.size + threadCount - 1) / threadCount)
         }
+        val threadPool = Executors.newFixedThreadPool(
+            chunks.size.coerceAtMost(threadCount)
+        ).asCoroutineDispatcher()
+
+        runBlocking {
+            chunks.forEach { chunk ->
+                launch(threadPool) {
+                    async {
+                        val httpClient = httpClientConfig.createHttpClient()
+                        val captcha = getCaptcha(httpClient)  // Get new CAPTCHA for each chunk/request
+                        chunk.forEach { number ->
+                            val trademark = scrapeTrademark(httpClient, number, captcha)
+                            trademark?.let {
+                                tData.add(it)
+                            }
+                        }
+                        httpClient.close()
+                    }.await()
+                }
+            }
+        }
+        println("All ${tData.size} trademarks scraped")
         return tData
     }
+
 }

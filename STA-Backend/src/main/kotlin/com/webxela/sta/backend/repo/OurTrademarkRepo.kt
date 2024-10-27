@@ -20,4 +20,6 @@ interface OurTrademarkRepo: JpaRepository<OurTrademarkEntity, Long> {
     @Transactional
     @Query("DELETE FROM OurTrademarkEntity o WHERE o.applicationNumber = :applicationNumber")
     fun deleteByApplicationNumber(applicationNumber: String)
+
+    fun findByApplicationNumberIn(tmNumberList: List<String>)
 }

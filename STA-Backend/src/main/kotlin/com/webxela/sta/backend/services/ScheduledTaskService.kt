@@ -6,6 +6,7 @@ import com.webxela.sta.backend.repo.JournalTmRepo
 import com.webxela.sta.backend.repo.LatestJournalRepo
 import com.webxela.sta.backend.scraper.LatestJournalScraper
 import com.webxela.sta.backend.scraper.StaScraper
+import com.webxela.sta.backend.utils.extractNumbersFromPDF
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -52,8 +53,8 @@ class ScheduledTaskService(
                     val savedFilePathList = journals.map { journal ->
                         System.getProperty("user.home") + "/sta/staFiles/${journal.journalNumber}-${journal.fileName!!.replace(" ", "")}"
                     }
-
-                    journalData.addAll(staScraper.scrapeByJournalPath(savedFilePathList))
+                    val applicationNumberList = extractNumbersFromPDF(savedFilePathList)
+                    journalData.addAll(staScraper.scrapeTrademarkByList(applicationNumberList = applicationNumberList))
                     dynamicJournalTmRepo.addAll(tableName, journalData)
                     latestJournalRepo.save(journals.first().toJournalEntity())
 

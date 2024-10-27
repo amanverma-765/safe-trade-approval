@@ -14,11 +14,13 @@ import com.webxela.sta.backend.repo.LatestJournalRepo
 import com.webxela.sta.backend.repo.OppositionReportRepo
 import com.webxela.sta.backend.repo.OurTrademarkRepo
 import com.webxela.sta.backend.scraper.StaScraper
+import com.webxela.sta.backend.utils.extractNumbersFromExcel
 import com.webxela.sta.backend.utils.generatePdfReport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
+import org.springframework.http.codec.multipart.FilePart
 import org.springframework.stereotype.Service
 import java.io.File
 import java.nio.file.Files
@@ -38,25 +40,53 @@ class TrademarkService(
 
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
 
-    suspend fun scrapeTrademark(appId: String, isOurTrademark: Boolean): Trademark {
+    suspend fun scrapeTrademark(appId: String, isOurTrademark: Boolean): Trademark = coroutineScope {
         require(appId.length <= 8) {
             logger.error("Application number $appId is too long")
             "Application Id is too long"
         }
-        return withContext(Dispatchers.IO) {
-            val trademark = (if (isOurTrademark) {
-                ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
-            } else {
-                journalTmRepo.findInAllTmEverywhere(appId)
-            }) ?: run {
-                val scrapedData = staScraper.scrapeByAppId(appId)
-                    ?: throw NoSuchElementException("No trademark found for appId: $appId after scraping")
-                if (isOurTrademark) {
-                    ourTrademarkRepo.save(scrapedData.toOurTrademarkEntity())
-                }
-                scrapedData
+        val trademark = (if (isOurTrademark) {
+            ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
+        } else {
+            journalTmRepo.findInAllTmEverywhere(appId)
+        }) ?: run {
+            val scrapedData = staScraper.scrapeByAppId(appId)
+                ?: throw NoSuchElementException("No trademark found for appId: $appId after scraping")
+            if (isOurTrademark) {
+                ourTrademarkRepo.save(scrapedData.toOurTrademarkEntity())
             }
-            trademark
+            scrapedData
+        }
+        trademark
+    }
+
+    suspend fun scrapeOurTmByExcel(excelFile: FilePart) = coroutineScope {
+        try {
+            val tmNumberList = extractNumbersFromExcel(excelFile)
+
+            val existingTrademarks = withContext(Dispatchers.IO) {
+                ourTrademarkRepo.findAll().map { it.toTrademark() }
+            }
+
+            val existingAppNumbers = existingTrademarks.map { it.applicationNumber }.toSet()
+            val newTmNumbers = tmNumberList.filterNot { it in existingAppNumbers }
+
+            if (newTmNumbers.isEmpty()) {
+                logger.info("No new trademarks to process. All trademarks already exist in database.")
+                throw IllegalArgumentException("No new trademarks to process. All trademarks already exist in database.")
+            }
+
+            logger.info("Starting to scrape ${newTmNumbers.size} new trademarks")
+            val trademarks = staScraper.scrapeTrademarkByList(newTmNumbers)
+            println(trademarks.size)
+            withContext(Dispatchers.IO) {
+                ourTrademarkRepo.saveAll(trademarks.map { it.toOurTrademarkEntity() })
+            }
+
+            logger.info("Successfully processed ${trademarks.size} new trademarks")
+        } catch (ex: Exception) {
+            logger.error("Error processing trademarks from Excel: ", ex)
+            throw ex
         }
     }
 
@@ -69,10 +99,8 @@ class TrademarkService(
         ourTrademarkRepo.findAll().map { it.toTrademark() }
     }
 
-    suspend fun deleteOurTrademark(appid: String) {
-        withContext(Dispatchers.IO) {
-            ourTrademarkRepo.deleteByApplicationNumber(appid)
-        }
+    suspend fun deleteOurTrademark(appid: String) = coroutineScope {
+        ourTrademarkRepo.deleteByApplicationNumber(appid)
     }
 
     suspend fun getGeneratedReports(): List<OppositionReport> = coroutineScope {

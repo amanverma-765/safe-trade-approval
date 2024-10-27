@@ -31,7 +31,6 @@ class TrademarkScraper(
     ): String? {
 
         val initialResponse: String?
-        val finalResponse: String?
 
         val initialFormData = payloadParser.getStaticFormData(appId, captcha)
 
@@ -49,7 +48,7 @@ class TrademarkScraper(
         }
 
         // Retry mechanism for the final POST request
-        finalResponse = retry(maxRetries, retryDelay) {
+        val finalResponse: String = retry(maxRetries, retryDelay) {
             val finalFormData = payloadParser.parsePayloadToFormData(response = initialResponse)
             httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
