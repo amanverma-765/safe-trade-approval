@@ -79,5 +79,30 @@ class ScheduledTaskService(
     fun runTaskManually() {
         scheduleLatestJournalScraping()
     }
+
+//    fun scrapeAllJournals() {
+//        runBlocking {
+//            var retryCount = 0
+//            val maxRetries = 4
+//            var success = false
+//
+//            while (retryCount < maxRetries && !success) {
+//                try {
+//
+//                    success = true
+//                } catch (ex: Exception) {
+//                    retryCount++
+//                    logger.error("Error during scheduled scraping on attempt ${retryCount}: ", ex)
+//
+//                    if (retryCount == maxRetries) {
+//                        logger.error("Max retry attempts reached. Task failed.")
+//                        throw RuntimeException("Scheduled task failed after $maxRetries attempts.")
+//                    } else {
+//                        logger.info("Retrying... ($retryCount/$maxRetries)")
+//                    }
+//                }
+//            }
+//        }
+//    }
 }
 
