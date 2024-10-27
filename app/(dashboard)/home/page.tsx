@@ -20,8 +20,6 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
-import { POST } from 'app/api/auth/[...nextauth]/route';
-
 
 // Define the type for the Journal entries
 interface JournalEntry {
@@ -30,24 +28,13 @@ interface JournalEntry {
   lastDate: string;
 }
 
-interface ReportRequest {
-  journalAppId: string,
-  journalNumber: string,
-  ourAppIdList: Array<string>
-}
-
 // Define the type for the table that shows after generating Excel
 interface MatchingData {
-  applicationNoJournalTM: string; // Application no of Journal TM
-  applicationNoOurTM: string[]; // Application no of Our TM
-  journalTM: string; // Journal TM
-  ourTM: string[]; // Our TM (multiple values)
-  class: string; // Class
-}
-
-interface ErrorResponse {
-  message: string,
-  status: number
+  applicationNoJournalTM: string;
+  applicationNoOurTM: string[];
+  journalTM: string;
+  ourTM: string[];
+  class: string;
 }
 
 const url = process.env.NEXT_PUBLIC_API_URL;
@@ -55,10 +42,9 @@ const url = process.env.NEXT_PUBLIC_API_URL;
 // Function to handle Excel file generation
 const generateExcel = (selectedJournals: JournalEntry[]) => {
   console.log('Generating Excel file for selected journals:', selectedJournals);
-  // Your Excel generation logic here
+  // Excel generation logic here
 };
 
-// The ProductsTable component definition
 function ProductsTable({
   journals,
   offset,
@@ -74,19 +60,26 @@ function ProductsTable({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [matchingData, setMatchingData] = useState<MatchingData[]>([]);
   const [uniqueOurTM, setUniqueOurTM] = useState<Set<string>>(new Set());
-  const [selectedUniqueOurTM, setSelectedUniqueOurTM] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [selectedUniqueOurTM, setSelectedUniqueOurTM] = useState<Set<string>>(
+    new Set()
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   function prevPage() {
-    router.push(`/?offset=${Math.max(offset - journalsPerPage, 0)}`, { scroll: false });
+    router.push(`/?offset=${Math.max(offset - journalsPerPage, 0)}`, {
+      scroll: false
+    });
   }
 
   function nextPage() {
-    router.push(`/?offset=${Math.min(offset + journalsPerPage, totalJournals - 1)}`, { scroll: false });
+    router.push(
+      `/?offset=${Math.min(offset + journalsPerPage, totalJournals - 1)}`,
+      { scroll: false }
+    );
   }
 
   const handleRowSelect = (journalNo: string) => {
-    setSelectedRows(prevSelected => {
+    setSelectedRows((prevSelected) => {
       const updatedSelected = new Set(prevSelected);
       if (updatedSelected.has(journalNo)) {
         updatedSelected.delete(journalNo);
@@ -97,132 +90,111 @@ function ProductsTable({
     });
   };
 
+  const fetchOurTm = async (appId: string) => {
+    try {
+      const response = await fetch(`${url}/scrape/our/application/${appId}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      return data.tmAppliedFor;
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+      return null;
+    }
+  };
+
+  const fetchJournalTm = async (appId: string) => {
+    try {
+      const response = await fetch(
+        `${url}/scrape/journal/application/${appId}`
+      );
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      return data.tmAppliedFor;
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+      return null;
+    }
+  };
+
   const handleSearchReport = () => {
-
-    const selectedJournals = journals.filter(journal => selectedRows.has(journal.journalNo));
-    if (selectedJournals.length == 0) {
-      alert("At least one Journal should be selected");
-      return
-    }
-    let query = ""
-    selectedJournals.forEach((item, index) => {
-      if (index == 0) query += `${item.journalNo}`; else query += `&${item.journalNo}`;
-    })
-
-    const fetchOurTm = async (appId: string) => {
-      try {
-        const response = await fetch(`${url}/scrape/our/application/${appId}`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        return data["tmAppliedFor"]
-      } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
-      }
-
+    const selectedJournals = journals.filter((journal) =>
+      selectedRows.has(journal.journalNo)
+    );
+    if (selectedJournals.length === 0) {
+      alert('At least one Journal should be selected');
+      return;
     }
 
-    const fetchJournalTm = async (appId: string) => {
-      try {
-        const response = await fetch(`${url}/scrape/journal/application/${appId}`);
+    const query = selectedJournals.map((item) => item.journalNo).join('&');
+    setIsLoading(true);
+
+    fetch(`${url}/match_trademarks/${query}`)
+      .then((response) => {
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          return response.json().then((errorData) => {
+            throw new Error(`Error: ${errorData.status} ${errorData.message}`);
+          });
         }
-        const data = await response.json();
-        return data["tmAppliedFor"]
-      } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
-      }
-    }
+        return response.json();
+      })
+      .then((data) => {
+        return Promise.all(
+          data.map(
+            async (item: {
+              ourTrademarkAppNumbers: any[];
+              journalAppNumber: string;
+              tmClass: any;
+            }) => {
+              const ourTmPromises = item.ourTrademarkAppNumbers.map((tm) =>
+                fetchOurTm(tm)
+              );
+              const journalTmPromise = fetchJournalTm(item.journalAppNumber);
 
-
-    const fetchMatchingReport = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${url}/match_trademarks/${query}`);
-
-        if (!response.ok) {
-          const errorResponse: ErrorResponse = await response.json();
-          const errorMessage = `Error: ${errorResponse.status} ${errorResponse.message}`;
-          alert(errorMessage)
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        const mappedData: MatchingData[] = await Promise.all(
-          data.map(async (item: { journalAppNumber: string; ourTrademarkAppNumbers: Array<string>; tmClass: string; journalNumber: string }) => {
-            const ourTmAppIdList = await Promise.all(
-              item.ourTrademarkAppNumbers.map(async (tm) => {
-                return await fetchOurTm(tm);
-              })
-            );
-            const journalTm = fetchJournalTm(item.journalAppNumber)
-            return {
-              applicationNoJournalTM: item.journalAppNumber,
-              applicationNoOurTM: item.ourTrademarkAppNumbers,
-              journalTM: journalTm,
-              ourTM: ourTmAppIdList,
-              class: item.tmClass,
-            };
-          })
+              const [ourTmAppIdList, journalTm] = await Promise.all([
+                Promise.all(ourTmPromises),
+                journalTmPromise
+              ]);
+              return {
+                applicationNoJournalTM: item.journalAppNumber,
+                applicationNoOurTM: item.ourTrademarkAppNumbers,
+                journalTM: journalTm,
+                ourTM: ourTmAppIdList.filter(Boolean),
+                class: item.tmClass
+              };
+            }
+          )
         );
-
+      })
+      .then((mappedData) => {
         setMatchingData(mappedData);
-
         const allOurTM = new Set<string>();
-        mappedData.forEach(data => {
-          data.ourTM.forEach(ourTMValue => allOurTM.add(ourTMValue));
+        mappedData.forEach((data) => {
+          data.ourTM.forEach((ourTMValue: string) => allOurTM.add(ourTMValue));
         });
         setUniqueOurTM(allOurTM);
-
-      } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
-      } finally {
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        alert(error.message);
+      })
+      .finally(() => {
         setTimeout(() => {
           setIsLoading(false);
         }, 200);
-      }
-    };
-    fetchMatchingReport()
+      });
   };
 
   const handleGenerateIndividualOpposition = () => {
-    // const oppositionUrl = `${url}/generate_report`
-
-    // const reportRequest: ReportRequest = {
-    //   journalAppId: "some",
-    //   journalNumber: "some",
-    //   ourAppIdList: [
-    //     "",
-    //     ""
-    //   ]
-    // };
-
-    // const generateReport = async () => {
-    //   try {
-    //     // setLoading(true);
-    //     const response = await fetch(url + "/get/latest_journals", {
-    //       method: 'POST',
-    //       body: JSON.stringify(reportRequest)
-    //     });
-    //     if (!response.ok) {
-    //       alert(response.body)
-    //       throw new Error('Network response was not ok');
-    //     }
-    //     const data = await response.json();
-    //   } catch (error) {
-    //     console.error('There was a problem with the fetch operation:', error);
-    //   } finally {
-    //     setTimeout(() => {
-    //       // setLoading(false);
-    //     }, 200);
-    //   }
-    // };
-    // generateReport()
+    // Future implementation for generating individual opposition
+    console.log('Generating individual opposition...');
   };
 
   const handleUniqueOurTMSelect = (ourTMValue: string) => {
-    setSelectedUniqueOurTM(prevSelected => {
+    setSelectedUniqueOurTM((prevSelected) => {
       const updatedSelected = new Set(prevSelected);
       if (updatedSelected.has(ourTMValue)) {
         updatedSelected.delete(ourTMValue);
@@ -284,7 +256,8 @@ function ProductsTable({
               <div className="text-xs text-muted-foreground">
                 Showing{' '}
                 <strong>
-                  {Math.min(offset, totalJournals) + 1}-{Math.min(offset + journalsPerPage, totalJournals)}
+                  {Math.min(offset, totalJournals) + 1}-
+                  {Math.min(offset + journalsPerPage, totalJournals)}
                 </strong>{' '}
                 of <strong>{totalJournals}</strong> journals
               </div>
@@ -312,13 +285,12 @@ function ProductsTable({
           </CardFooter>
         </Card>
       )}
+
       {matchingData.length > 0 && (
         <Card className="mt-4">
           <CardHeader>
             <CardTitle>Generated Search Reports</CardTitle>
-            <CardDescription>
-              Data from the selected journals
-            </CardDescription>
+            <CardDescription>Data from the selected journals</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -378,8 +350,7 @@ function ProductsTable({
               Generate Individual Opposition
             </Button>
             <div className="text-xs text-muted-foreground">
-              Showing{' '}
-              <strong>{uniqueOurTM.size} unique Our TM values</strong>
+              Showing <strong>{uniqueOurTM.size} unique Our TM values</strong>
             </div>
           </CardFooter>
         </Card>
@@ -388,41 +359,42 @@ function ProductsTable({
   );
 }
 
-
-// HomePage component definition
 const HomePage = () => {
-
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState<boolean>(false);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
 
   useEffect(() => {
-    const fetchJournals = async () => {
-      try {
-        setLoading(true);
+    setLoading(true);
 
-        const response = await fetch(url + "/get/latest_journals");
-
+    fetch(`${url}/get/latest_journals`)
+      .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        const data = await response.json();
-        const mappedJournals: JournalEntry[] = data.map((item: { journalNumber: any; dateOfPublication: any; dateOfAvailability: any; }) => ({
-          journalNo: item.journalNumber,
-          dateOfPublication: item.dateOfPublication,
-          lastDate: item.dateOfAvailability
-        }));
-
+        return response.json();
+      })
+      .then((data) => {
+        const mappedJournals: JournalEntry[] = data.map(
+          (item: {
+            journalNumber: any;
+            dateOfPublication: any;
+            dateOfAvailability: any;
+          }) => ({
+            journalNo: item.journalNumber,
+            dateOfPublication: item.dateOfPublication,
+            lastDate: item.dateOfAvailability
+          })
+        );
         setJournals(mappedJournals);
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('There was a problem with the fetch operation:', error);
-      } finally {
+      })
+      .finally(() => {
         setTimeout(() => {
           setLoading(false);
         }, 200);
-      }
-    };
-
-    fetchJournals();
+      });
   }, []);
 
   const offset = 0;
@@ -433,11 +405,14 @@ const HomePage = () => {
       {loading ? (
         <CircularLoader />
       ) : (
-        <ProductsTable journals={journals.slice(offset, offset + 5)} offset={offset} totalJournals={totalJournals} />
+        <ProductsTable
+          journals={journals.slice(offset, offset + 5)}
+          offset={offset}
+          totalJournals={totalJournals}
+        />
       )}
     </div>
   );
-
 };
 
 export default HomePage;

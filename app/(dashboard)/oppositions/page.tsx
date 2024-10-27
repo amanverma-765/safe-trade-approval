@@ -43,34 +43,6 @@ const usePdfHandler = () => {
     </html>
   `;
 
-  const handlePdf = async (reportId: string, download: boolean = true) => {
-    const fileUrl = `${url}/get/download_report/${reportId}`;
-    let blobUrl: string | undefined;
-
-    try {
-      setIsPdfProcessing(true);
-      const response = await fetch(fileUrl);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const blob = await response.blob();
-      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-      blobUrl = URL.createObjectURL(pdfBlob);
-
-      if (download) {
-        downloadPdf(blobUrl, reportId);
-      } else {
-        viewPdf(blobUrl);
-      }
-    } catch (error) {
-      console.error('There was a problem with the fetch operation:', error);
-    } finally {
-      setTimeout(() => {
-        setIsPdfProcessing(false);
-      }, 200);
-    }
-  };
-
   const downloadPdf = (blobUrl: string, reportId: string) => {
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -96,6 +68,38 @@ const usePdfHandler = () => {
     }
   };
 
+  const handlePdf = (reportId: string, download: boolean = true) => {
+    const fileUrl = `${url}/get/download_report/${reportId}`;
+
+    setIsPdfProcessing(true);
+
+    fetch(fileUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+
+        if (download) {
+          downloadPdf(blobUrl, reportId);
+        } else {
+          viewPdf(blobUrl);
+        }
+      })
+      .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setIsPdfProcessing(false);
+        }, 200);
+      });
+  };
+
   return { handlePdf, isPdfProcessing };
 };
 
@@ -104,50 +108,58 @@ const useReports = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchReports = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${url}/get/generated_reports`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      const mappedReport: PDFReport[] = data.map(
-        (item: {
-          reportId: string;
-          report: string;
-          journalNumber: string;
-        }) => ({
-          title: item.report,
-          report_id: item.reportId,
-          journal_number: item.journalNumber
-        })
-      );
-      setReports(mappedReport);
-    } catch (error) {
-      console.error('There was a problem with the fetch operation:', error);
-    } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 200);
-    }
+  const fetchReports = () => {
+    setIsLoading(true);
+
+    fetch(`${url}/get/generated_reports`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        const mappedReport: PDFReport[] = data.map(
+          (item: {
+            reportId: string;
+            report: string;
+            journalNumber: string;
+          }) => ({
+            title: item.report,
+            report_id: item.reportId,
+            journal_number: item.journalNumber
+          })
+        );
+        setReports(mappedReport);
+      })
+      .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 200);
+      });
   };
 
-  const handleDelete = async (reportId: string) => {
-    try {
-      setIsDeleting(true);
-      const response = await fetch(`${url}/delete/report/${reportId}`);
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      await fetchReports(); // Refresh the list after deletion
-    } catch (error) {
-      console.error('There was a problem with the delete operation:', error);
-    } finally {
-      setTimeout(() => {
-        setIsDeleting(false);
-      }, 200);
-    }
+  const handleDelete = (reportId: string) => {
+    setIsDeleting(true);
+
+    fetch(`${url}/delete/report/${reportId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return fetchReports();
+      })
+      .catch(error => {
+        console.error('There was a problem with the delete operation:', error);
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setIsDeleting(false);
+        }, 200);
+      });
   };
 
   useEffect(() => {
@@ -157,7 +169,6 @@ const useReports = () => {
   return { reports, isLoading, isDeleting, handleDelete };
 };
 
-// Report Card Component
 const ReportCard: React.FC<{
   report: PDFReport;
   onView: (reportId: string) => void;
