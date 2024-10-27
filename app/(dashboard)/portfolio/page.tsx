@@ -49,7 +49,7 @@ const TrademarkTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {trademarks.toReversed().map((trademark) => (
+            {trademarks.reverse().map((trademark) => (
               <TableRow key={trademark.applicationNo}>
                 <TableHead>{trademark.applicationNo}</TableHead>
                 <TableHead>{trademark.trademark}</TableHead>

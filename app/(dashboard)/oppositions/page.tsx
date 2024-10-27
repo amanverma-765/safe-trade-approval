@@ -221,7 +221,7 @@ const ReportViewer = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {reports.toReversed().map((report) => (
+                {reports.reverse().map((report) => (
                   <ReportCard
                     key={report.report_id}
                     report={report}
