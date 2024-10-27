@@ -10,11 +10,11 @@ data class OurTrademarkEntity(
     @Column(name = "tm_id")
     val tmId: Long? = null,
 
+    @Column(name = "application_number", nullable = false, unique = true)
+    val applicationNumber: String,
+
     @Column(name = "status")
     val status: String?,
-
-    @Column(name = "application_number", nullable = false)
-    val applicationNumber: String,
 
     @Column(name = "tm_class", nullable = false)
     val tmClass: String,

@@ -14,7 +14,7 @@ interface OurTrademarkRepo: JpaRepository<OurTrademarkEntity, Long> {
 
     fun findByTmClass(tmClass: String): List<OurTrademarkEntity>
 
-    fun findByTmClassAndTmAppliedForContainingIgnoreCase(tmClass: String, tmAppliedFor: String): List<OurTrademarkEntity>
+//    fun findByTmClassAndTmAppliedForContainingIgnoreCase(tmClass: String, tmAppliedFor: String): List<OurTrademarkEntity>
 
     @Modifying
     @Transactional
@@ -22,4 +22,8 @@ interface OurTrademarkRepo: JpaRepository<OurTrademarkEntity, Long> {
     fun deleteByApplicationNumber(applicationNumber: String)
 
     fun findByApplicationNumberIn(tmNumberList: List<String>)
+
+    @Query("SELECT t.applicationNumber FROM OurTrademarkEntity t")
+    fun findAllApplicationNumbers(): List<String>
+
 }

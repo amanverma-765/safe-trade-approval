@@ -44,7 +44,7 @@ class TrademarkController(
 
     @GetMapping("/scrape/journal/application/{applicationId}")
     suspend fun scrapeJournalTmByApplicationId(
-        @PathVariable applicationId: Long,
+        @PathVariable applicationId: String,
     ): ResponseEntity<Any> {
         try {
             val trademark = trademarkService.scrapeTrademark(applicationId.toString(), false)
@@ -57,7 +57,7 @@ class TrademarkController(
 
     @GetMapping("/scrape/our/application/{applicationId}")
     suspend fun scrapeOurTmByApplicationId(
-        @PathVariable applicationId: Long
+        @PathVariable applicationId: String
     ): ResponseEntity<Any> {
         try {
             val trademark = trademarkService.scrapeTrademark(applicationId.toString(), true)
@@ -129,7 +129,7 @@ class TrademarkController(
 
     @GetMapping("/delete/our/application/{applicationId}")
     suspend fun deleteOurTrademark(
-        @PathVariable applicationId: Long,
+        @PathVariable applicationId: String,
     ): ResponseEntity<Any> {
         try {
             trademarkService.deleteOurTrademark(applicationId.toString())

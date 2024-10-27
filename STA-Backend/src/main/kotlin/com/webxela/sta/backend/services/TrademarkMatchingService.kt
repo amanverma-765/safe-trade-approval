@@ -18,7 +18,6 @@ class TrademarkMatchingService(
     private val ourTrademarkRepo: OurTrademarkRepo,
     private val journalTmRepo: JournalTmRepo
 ) {
-
     private val logger = LoggerFactory.getLogger(TrademarkMatchingService::class.java)
 
     suspend fun findMatchingTrademarks(journalNumbers: List<String>) = withContext(Dispatchers.IO) {
@@ -38,21 +37,21 @@ class TrademarkMatchingService(
                     val tmWordList = splitTrademarkNames(journalTrademark.tmAppliedFor)
                     val ourMatchedTmNumbers = mutableSetOf<String>()
 
-                    tmWordList.forEach { tmWord ->
-                        val matches = findSimilarTrademarksInMemory(tmWord, ourTrademarks)
-                        if (matches.isNotEmpty()) {
+                    if (tmWordList.isNotEmpty()) {
+                        tmWordList.forEach { tmWord ->
+                            val matches = findSimilarTrademarksInMemory(tmWord, ourTrademarks)
                             ourMatchedTmNumbers.addAll(matches.map { it.applicationNumber })
                         }
-                    }
 
-                    if (ourMatchedTmNumbers.isNotEmpty()) {
-                        val matchingTrademark = MatchingTrademark(
-                            journalAppNumber = journalTrademark.applicationNumber,
-                            ourTrademarkAppNumbers = ourMatchedTmNumbers.toList(),
-                            tmClass = journalTrademark.tmClass,
-                            journalNumber = journalNumber
-                        )
-                        allMatchingTrademarks.add(matchingTrademark)
+                        if (ourMatchedTmNumbers.isNotEmpty()) {
+                            val matchingTrademark = MatchingTrademark(
+                                journalAppNumber = journalTrademark.applicationNumber,
+                                ourTrademarkAppNumbers = ourMatchedTmNumbers.toList(),
+                                tmClass = journalTrademark.tmClass,
+                                journalNumber = journalNumber
+                            )
+                            allMatchingTrademarks.add(matchingTrademark)
+                        }
                     }
                 }
 
@@ -71,18 +70,27 @@ class TrademarkMatchingService(
     }
 
     private fun splitTrademarkNames(trademarkName: String): List<String> {
-        val tmWords = trademarkName.lowercase().split(" ")
-        return tmWords
-            .map { it.trim().replace("[().,\"']".toRegex(), " ") }
-            .filter { it !in stopWords && it.length > 3 }
+        return trademarkName
+            .lowercase()
+            .replace("[().,\"']".toRegex(), " ")
+            .split("\\s+".toRegex())
+            .filter { word ->
+                word.trim().let {
+                    it.length > 3 && it !in stopWords
+                }
+            }
     }
 
     private fun findSimilarTrademarksInMemory(
         tmWord: String,
         ourTrademarks: List<Trademark>
     ): List<Trademark> {
-        return ourTrademarks.filter {
-            it.tmAppliedFor.contains(tmWord, ignoreCase = true)
+        return ourTrademarks.filter { trademark ->
+            val trademarkWords = splitTrademarkNames(trademark.tmAppliedFor)
+            trademarkWords.any {
+                it.contains(tmWord, ignoreCase = true) ||
+                        tmWord.contains(it, ignoreCase = true)
+            }
         }
     }
 
@@ -91,7 +99,10 @@ class TrademarkMatchingService(
         journalNumber: String
     ) {
         val matchingTableName = "matching_$journalNumber"
-        matchingTrademarkRepo.replaceAll(tableName = matchingTableName, matchingTrademarks = matchingTrademarks)
+        matchingTrademarkRepo.replaceAll(
+            tableName = matchingTableName,
+            matchingTrademarks = matchingTrademarks
+        )
     }
 
     suspend fun getMatchingResult(journalList: List<String>): List<MatchingTrademark> = coroutineScope {
@@ -100,11 +111,14 @@ class TrademarkMatchingService(
             journalList.forEach { journalNumber ->
                 val tableName = "matching_$journalNumber"
                 val data = matchingTrademarkRepo.findAll(tableName)
-                if (data.isEmpty()) throw NoSuchElementException("No Matching Result Available")
+                if (data.isEmpty()) {
+                    logger.warn("No matching results found for journal number: $journalNumber")
+                    throw NoSuchElementException("No Matching Result Available for journal: $journalNumber")
+                }
                 matchedTrademarks.addAll(data)
             }
         } catch (ex: Exception) {
-            logger.error("Error while getting matching report from DB")
+            logger.error("Error while getting matching report from DB", ex)
             throw ex
         }
         return@coroutineScope matchedTrademarks
@@ -113,6 +127,9 @@ class TrademarkMatchingService(
     private val stopWords = listOf(
         "for", "the", "in", "and", "of", "to", "device", "the",
         "logo", "a", "as", "label", "with", "company", "trading",
-        "utc", "limited", "devices", "by", "in", "/"
+        "utc", "limited", "devices", "by", "in", "/", "of", "llc",
+        "inc", "corporation", "corp", "ltd", "private", "public",
+        "design", "mark", "trademark", "brand", "solutions",
+        "solution"
     )
 }
