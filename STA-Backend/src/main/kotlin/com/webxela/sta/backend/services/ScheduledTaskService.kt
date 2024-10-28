@@ -30,8 +30,8 @@ class ScheduledTaskService(
     )
 
     sealed class ScrapingResult {
-        object Success : ScrapingResult()
-        object JournalExists : ScrapingResult()
+        data object Success : ScrapingResult()
+        data object JournalExists : ScrapingResult()
         data class Error(val exception: Exception) : ScrapingResult()
     }
 
@@ -119,22 +119,19 @@ class ScheduledTaskService(
                         return@retryWithExponentialBackoff
                     }
 
-                    // Process each journal group
+                    // Process each journal group sequentially
                     val groupedJournals = journals.groupBy { it.journalNumber }.values.map { it.toList() }
+                    for (journalGroup in groupedJournals) {
+                        withContext(Dispatchers.IO) {
+                            when (val result = processJournalGroup(journalGroup)) {
+                                is ScrapingResult.Success ->
+                                    logger.info("Successfully processed journal ${journalGroup.first().journalNumber}")
 
-                    coroutineScope {
-                        groupedJournals.forEach { journalGroup ->
-                            launch {
-                                when (val result = processJournalGroup(journalGroup)) {
-                                    is ScrapingResult.Success ->
-                                        logger.info("Successfully processed journal ${journalGroup.first().journalNumber}")
+                                is ScrapingResult.JournalExists ->
+                                    logger.info("Journal ${journalGroup.first().journalNumber} already exists")
 
-                                    is ScrapingResult.JournalExists ->
-                                        logger.info("Journal ${journalGroup.first().journalNumber} already exists")
-
-                                    is ScrapingResult.Error ->
-                                        throw result.exception
-                                }
+                                is ScrapingResult.Error ->
+                                    throw result.exception
                             }
                         }
                     }

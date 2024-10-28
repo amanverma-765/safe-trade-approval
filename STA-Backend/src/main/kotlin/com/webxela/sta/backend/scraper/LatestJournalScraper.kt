@@ -32,7 +32,7 @@ class LatestJournalScraper(
             // Fetch the TM listing page
             val response = httpClient.get(TM_LISTING_PAGE)
             val document = Jsoup.parse(response.bodyAsText().trimIndent())
-            val allRows = document.select("table#Journal tbody tr").take(15)
+            val allRows = document.select("table#Journal tbody tr").take(1)
             // Extract data from the row
             allRows.forEach { row ->
                 val cells = row.getElementsByTag("td")
