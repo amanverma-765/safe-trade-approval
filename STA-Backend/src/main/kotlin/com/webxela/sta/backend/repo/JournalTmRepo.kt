@@ -175,4 +175,38 @@ class JournalTmRepo {
         }
     }
 
+    @Transactional
+    fun tableExistsAndNotEmpty(tableName: String): Boolean {
+        return try {
+            // Check if table exists
+            val existsQuery = """
+            SELECT EXISTS (
+                SELECT 1 
+                FROM information_schema.tables 
+                WHERE table_name = :tableName
+            )
+        """.trimIndent()
+
+            val exists = entityManager.createNativeQuery(existsQuery)
+                .setParameter("tableName", tableName)
+                .singleResult as Boolean
+
+            if (!exists) {
+                logger.info("Table $tableName does not exist.")
+                false
+            } else {
+                // Check if table has any rows
+                val countQuery = "SELECT COUNT(*) FROM $tableName"
+                val count = (entityManager.createNativeQuery(countQuery).singleResult as Number).toInt()
+                val isNotEmpty = count > 0
+                logger.info("Table $tableName exists and is${if (isNotEmpty) " not" else ""} empty.")
+                isNotEmpty
+            }
+        } catch (ex: Exception) {
+            logger.error("Error checking if table $tableName exists or is empty", ex)
+            throw ex
+        }
+    }
+
+
 }

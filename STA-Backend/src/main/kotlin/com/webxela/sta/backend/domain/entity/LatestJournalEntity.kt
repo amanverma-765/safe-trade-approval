@@ -11,7 +11,7 @@ data class LatestJournalEntity(
     @Column(name = "journalId")
     val journalId: Long = 0,
 
-    @Column(name = "journal_number")
+    @Column(name = "journal_number", unique = true)
     val journalNumber: String,
 
     @Column(name = "date_of_publication")
