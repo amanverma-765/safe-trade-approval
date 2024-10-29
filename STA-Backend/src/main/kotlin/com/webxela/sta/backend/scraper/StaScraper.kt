@@ -69,7 +69,7 @@ class StaScraper(
     // Scrape trademarks by journal file path
     suspend fun scrapeTrademarkByList(
         applicationNumberList: List<String>,
-        threadCount: Int = 25
+        threadCount: Int = 50
     ): List<Trademark> {
 
         val tData = mutableListOf<Trademark>()
