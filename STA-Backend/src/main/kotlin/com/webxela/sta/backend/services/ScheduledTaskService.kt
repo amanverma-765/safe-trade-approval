@@ -122,17 +122,15 @@ class ScheduledTaskService(
                     // Process each journal group sequentially
                     val groupedJournals = journals.groupBy { it.journalNumber }.values.map { it.toList() }
                     for (journalGroup in groupedJournals) {
-                        withContext(Dispatchers.IO) {
-                            when (val result = processJournalGroup(journalGroup)) {
-                                is ScrapingResult.Success ->
-                                    logger.info("Successfully processed journal ${journalGroup.first().journalNumber}")
+                        when (val result = processJournalGroup(journalGroup)) {
+                            is ScrapingResult.Success ->
+                                logger.info("Successfully processed journal ${journalGroup.first().journalNumber}")
 
-                                is ScrapingResult.JournalExists ->
-                                    logger.info("Journal ${journalGroup.first().journalNumber} already exists")
+                            is ScrapingResult.JournalExists ->
+                                logger.info("Journal ${journalGroup.first().journalNumber} already exists")
 
-                                is ScrapingResult.Error ->
-                                    throw result.exception
-                            }
+                            is ScrapingResult.Error ->
+                                throw result.exception
                         }
                     }
                 }
