@@ -7,4 +7,5 @@ object Constants {
     const val CAPTCHA_URL = "https://tmrsearch.ipindia.gov.in/eregister/captcha.ashx"
     const val TRADEMARK_URL = "https://tmrsearch.ipindia.gov.in/eregister/Application_View.aspx"
     const val GET_CAPTCHA_URL = "https://tmrsearch.ipindia.gov.in/eregister/Viewdetails_Copyright.aspx/GetCaptcha"
+    const val JWT_TOKEN = "4yO05*OQG20M@_87Aq£3VRrwl|7/,GB"
 }

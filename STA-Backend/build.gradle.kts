@@ -53,6 +53,16 @@ dependencies {
     implementation("org.apache.poi:poi:5.3.0")
     implementation("org.apache.poi:poi-ooxml:5.3.0")
     implementation("fr.opensagres.xdocreport:fr.opensagres.poi.xwpf.converter.pdf:2.1.0")
+    implementation ("org.springframework.boot:spring-boot-starter-security")
+    implementation ("org.springframework.security:spring-security-core")
+    implementation ("org.springframework.security:spring-security-config")
+    implementation ("org.springframework.security:spring-security-web")
+    implementation ("org.springframework.security:spring-security-crypto")
+    implementation ("org.springframework.security:spring-security-oauth2-jose")
+    implementation ("org.springframework.security:spring-security-oauth2-resource-server")
+    implementation ("org.springframework.security:spring-security-oauth2-client")
+    implementation("io.jsonwebtoken:jjwt:0.12.6")
+    implementation("com.auth0:java-jwt:4.2.1") // JWT library
 }
 
 kotlin {

@@ -1,6 +1,7 @@
 package com.webxela.sta.backend.controller
 
-import com.webxela.sta.backend.domain.model.*
+import com.webxela.sta.backend.domain.model.ErrorResponse
+import com.webxela.sta.backend.domain.model.ReportGenRequest
 import com.webxela.sta.backend.services.ScheduledTaskService
 import com.webxela.sta.backend.services.TrademarkMatchingService
 import com.webxela.sta.backend.services.TrademarkService
@@ -9,7 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.multipart.MultipartFile
+
 
 @RestController
 @RequestMapping("/api/v1/sta")
@@ -47,7 +48,7 @@ class TrademarkController(
         @PathVariable applicationId: String,
     ): ResponseEntity<Any> {
         try {
-            val trademark = trademarkService.scrapeTrademark(applicationId.toString(), false)
+            val trademark = trademarkService.scrapeTrademark(applicationId, false)
             return ResponseEntity.ok(trademark)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
@@ -60,7 +61,7 @@ class TrademarkController(
         @PathVariable applicationId: String
     ): ResponseEntity<Any> {
         try {
-            val trademark = trademarkService.scrapeTrademark(applicationId.toString(), true)
+            val trademark = trademarkService.scrapeTrademark(applicationId, true)
             return ResponseEntity.ok(trademark)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
@@ -132,7 +133,7 @@ class TrademarkController(
         @PathVariable applicationId: String,
     ): ResponseEntity<Any> {
         try {
-            trademarkService.deleteOurTrademark(applicationId.toString())
+            trademarkService.deleteOurTrademark(applicationId)
             return ResponseEntity.ok("Successfully deleted $applicationId")
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
