@@ -1,4 +1,4 @@
-# Trademark Service Backend
+# STA Backend
 
 This repository contains the backend for the Trademark Service, built with Kotlin, Java, Spring Boot, and Gradle. The backend provides various endpoints for managing trademarks and requires JWT token authorization for most endpoints.
 
