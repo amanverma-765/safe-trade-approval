@@ -80,6 +80,6 @@ This repository contains the backend for the Trademark Service, built with Kotli
 
 ## Accessing API Documentation
 
-The API documentation is available at `http://localhost:8888/docs`. This page provides detailed information about all the available endpoints, their usage, and the required JWT token authorization.
+The API documentation is available at `http://localhost:8888/api/v1/sta/docs`. This page provides detailed information about all the available endpoints, their usage, and the required JWT token authorization.
 
 

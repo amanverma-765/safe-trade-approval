@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Mono
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/sta/auth")
 class StaAuthController(
     private val userAuthService: UserAuthService,
     private val jwtUtil: JwtUtil

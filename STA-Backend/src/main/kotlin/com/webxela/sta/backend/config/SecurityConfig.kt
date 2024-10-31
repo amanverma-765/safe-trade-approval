@@ -40,7 +40,10 @@ class SecurityConfig {
             .cors { it.disable() }
             .authorizeExchange { exchanges ->
                 exchanges
-                    .pathMatchers("/auth/**").permitAll()
+                    .pathMatchers(
+                        "/api/v1/sta/auth/**",
+                        "/api/v1/sta/docs"
+                    ).permitAll()
                     .anyExchange().authenticated()
             }
             .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
