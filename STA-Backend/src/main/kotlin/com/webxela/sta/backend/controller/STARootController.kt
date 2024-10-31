@@ -12,7 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 @RestController
-@RequestMapping("/api/v1/sta")
+@RequestMapping("/docs")
 class STARootController {
 
     @RequestMapping("", "/")
