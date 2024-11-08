@@ -4,30 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            background-color: #f4f4f4;
-        }
-
-        h1, h2, h3 {
+            background-color: #f5f5f5;
             color: #333;
         }
 
+        h1, h2, h3 {
+            color: #3f51b5;
+        }
+
         code {
-            background-color: #eee;
+            background-color: #e0e0e0;
             padding: 5px;
             border-radius: 5px;
+            font-family: 'Roboto Mono', monospace;
         }
 
         pre {
-            background-color: #eee;
+            background-color: #e0e0e0;
             padding: 10px;
             border-radius: 5px;
             overflow: auto;
+            font-family: 'Roboto Mono', monospace;
         }
 
         table {
@@ -43,7 +47,23 @@
         }
 
         th {
-            background-color: #f2f2f2;
+            background-color: #3f51b5;
+            color: #fff;
+        }
+
+        .endpoint {
+            background-color: #c5cae9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .endpoint h4 {
+            margin-top: 0;
+        }
+
+        .endpoint p {
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -57,61 +77,48 @@
 <p><code>http://localhost:8080/api/v1/sta</code></p>
 
 <h2>Authorization</h2>
-<p>All endpoints (except for the authentication endpoints) require a valid JWT token in the <code>Authorization</code>
-    header.</p>
+<p>All endpoints (except for the authentication endpoints) require a valid JWT token in the <code>Authorization</code> header.</p>
 
 <h2>Endpoints</h2>
 
 <h3>Authentication Endpoints</h3>
 
-<h4>1. Register</h4>
-<p><strong>POST</strong> <code>/auth/register</code></p>
-<p>Registers a new user.</p>
-
-<h5>Request Body</h5>
-<pre>
-{
+<div class="endpoint">
+    <h4>1. Register</h4>
+    <p><strong>POST</strong> <code>/auth/register</code></p>
+    <p>Registers a new user.</p>
+    <h5>Request Body</h5>
+    <pre>{
     "email": "user@example.com",
     "password": "password123"
-}
-</pre>
+}</pre>
+    <h5>Response</h5>
+    <pre>"User registered successfully"</pre>
+</div>
 
-<h5>Response</h5>
-<pre>
-Response Body:
-"User registered successfully"
-</pre>
-
-<h4>2. Login</h4>
-<p><strong>POST</strong> <code>/auth/login</code></p>
-<p>Authenticates a user and returns a JWT token.</p>
-
-<h5>Request Body</h5>
-<pre>
-{
+<div class="endpoint">
+    <h4>2. Login</h4>
+    <p><strong>POST</strong> <code>/auth/login</code></p>
+    <p>Authenticates a user and returns a JWT token.</p>
+    <h5>Request Body</h5>
+    <pre>{
     "email": "user@example.com",
     "password": "password123"
-}
-</pre>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-{
+}</pre>
+    <h5>Response</h5>
+    <pre>{
     "token": "jwt-token-here"
-}
-</pre>
+}</pre>
+</div>
 
 <h3>Trademark Endpoints</h3>
 
-<h4>1. Get Latest Journals</h4>
-<p><strong>GET</strong> <code>/get/latest_journals</code></p>
-<p>Fetches a list of the latest journals.</p>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-[
+<div class="endpoint">
+    <h4>1. Get Latest Journals</h4>
+    <p><strong>GET</strong> <code>/get/latest_journals</code></p>
+    <p>Fetches a list of the latest journals.</p>
+    <h5>Response</h5>
+    <pre>[
     {
         "journalId": 1,
         "journalNumber": "JN-2023-001",
@@ -128,17 +135,15 @@ Response Body:
         "filePath": "/path/to/journal/file",
         "fileName": "JN-2023-002.pdf"
     }
-]
-</pre>
+]</pre>
+</div>
 
-<h4>2. Get Our Trademarks</h4>
-<p><strong>GET</strong> <code>/get/our_trademarks</code></p>
-<p>Retrieves a list of trademarks owned by the user.</p>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-[
+<div class="endpoint">
+    <h4>2. Get Our Trademarks</h4>
+    <p><strong>GET</strong> <code>/get/our_trademarks</code></p>
+    <p>Retrieves a list of trademarks owned by the user.</p>
+    <h5>Response</h5>
+    <pre>[
     {
         "tmId": 1,
         "status": "Registered",
@@ -162,29 +167,26 @@ Response Body:
         "agentAddress": "456 Agent St, City, Country",
         "publicationDetails": "Published in Journal 1"
     }
-]
-</pre>
+]</pre>
+</div>
 
-<h4>3. Scrape Journal Trademark by Application ID</h4>
-<p><strong>GET</strong> <code>/scrape/journal/application/{applicationId}</code></p>
-<p>Scrapes trademark information from a journal based on the provided application ID.</p>
-
-<h5>Path Variables</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>applicationId</td>
-        <td>The ID of the trademark application.</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-{
+<div class="endpoint">
+    <h4>3. Scrape Journal Trademark by Application ID</h4>
+    <p><strong>GET</strong> <code>/scrape/journal/application/{applicationId}</code></p>
+    <p>Scrapes trademark information from a journal based on the provided application ID.</p>
+    <h5>Path Variables</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>applicationId</td>
+            <td>The ID of the trademark application.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>{
     "tmId": 1,
     "status": "Pending",
     "applicationNumber": "TM-2023-005",
@@ -206,29 +208,26 @@ Response Body:
     "agentName": null,
     "agentAddress": null,
     "publicationDetails": "Not Published Yet"
-}
-</pre>
+}</pre>
+</div>
 
-<h4>4. Scrape Our Trademark by Application ID</h4>
-<p><strong>GET</strong> <code>/scrape/our/application/{applicationId}</code></p>
-<p>Scrapes trademark information for a specific application ID owned by the user.</p>
-
-<h5>Path Variable</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>applicationId</td>
-        <td>The ID of the user's trademark application.</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-{
+<div class="endpoint">
+    <h4>4. Scrape Our Trademark by Application ID</h4>
+    <p><strong>GET</strong> <code>/scrape/our/application/{applicationId}</code></p>
+    <p>Scrapes trademark information for a specific application ID owned by the user.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>applicationId</td>
+            <td>The ID of the user's trademark application.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>{
     "tmId": 2,
     "status": "Registered",
     "applicationNumber": "TM-2023-002",
@@ -250,29 +249,45 @@ Response Body:
     "agentName": "Agent Name",
     "agentAddress": "456 Agent St, City, Country",
     "publicationDetails": "Published in Journal 2"
-}
-</pre>
+}</pre>
+</div>
 
-<h4>5. Match Trademarks</h4>
-<p><strong>GET</strong> <code>/match_trademarks/{journalNumbers}</code></p>
-<p>Finds matching trademarks based on a list of journal numbers.</p>
+<div class="endpoint">
+    <h4>5. Scrape Our Trademark by Excel</h4>
+    <p><strong>POST</strong> <code>/scrape/our/excel</code></p>
+    <p>Scrapes trademark information from an uploaded Excel file.</p>
+    <h5>Request Part</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>excelFile</td>
+            <td>The Excel file containing trademark application IDs.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>"Excel trademark scraped successfully"</pre>
+</div>
 
-<h5>Path Variable</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>journalNumbers</td>
-        <td>A string of journal numbers separated by "&".</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-[
+<div class="endpoint">
+    <h4>6. Match Trademarks</h4>
+    <p><strong>GET</strong> <code>/match_trademarks/{journalNumbers}</code></p>
+    <p>Finds matching trademarks based on a list of journal numbers.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>journalNumbers</td>
+            <td>A string of journal numbers separated by "&".</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>[
     {
         "matchResultId": 1,
         "journalAppNumber": "JN-2023-001",
@@ -287,29 +302,26 @@ Response Body:
         "tmClass": "Class 9",
         "journalNumber": "JN-2023-002"
     }
-]
-</pre>
+]</pre>
+</div>
 
-<h4>6. Get Matching Result</h4>
-<p><strong>GET</strong> <code>/get/matching_result/{journalNumbers}</code></p>
-<p>Retrieves matching results for the specified journal numbers.</p>
-
-<h5>Path Variable</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>journalNumbers</td>
-        <td>A string of journal numbers separated by "&".</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-[
+<div class="endpoint">
+    <h4>7. Get Matching Result</h4>
+    <p><strong>GET</strong> <code>/get/matching_result/{journalNumbers}</code></p>
+    <p>Retrieves matching results for the specified journal numbers.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>journalNumbers</td>
+            <td>A string of journal numbers separated by "&".</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>[
     {
         "matchResultId": 1,
         "journalAppNumber": "JN-2023-001",
@@ -324,58 +336,48 @@ Response Body:
         "tmClass": "Class 9",
         "journalNumber": "JN-2023-002"
     }
-]
-</pre>
+]</pre>
+</div>
 
-<h4>7. Start Schedule Task</h4>
-<p><strong>GET</strong> <code>/start_schedule_task</code></p>
-<p>Manually starts a scheduled task.</p>
+<div class="endpoint">
+    <h4>8. Start Schedule Task</h4>
+    <p><strong>GET</strong> <code>/start_schedule_task</code></p>
+    <p>Manually starts a scheduled task.</p>
+    <h5>Response</h5>
+    <pre>"Schedule task finished successfully"</pre>
+</div>
 
-<h5>Response</h5>
-<pre>
-Response Body:
-"Schedule task finished successfully"
-</pre>
+<div class="endpoint">
+    <h4>9. Delete Our Trademark</h4>
+    <p><strong>GET</strong> <code>/delete/our/application/{applicationId}</code></p>
+    <p>Deletes a trademark owned by the user based on the application ID.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>applicationId</td>
+            <td>The ID of the user's trademark application.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>"Successfully deleted {applicationId}"</pre>
+</div>
 
-<h4>8. Delete Our Trademark</h4>
-<p><strong>GET</strong> <code>/delete/our/application/{applicationId}</code></p>
-<p>Deletes a trademark owned by the user based on the application ID.</p>
-
-<h5>Path Variable</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>applicationId</td>
-        <td>The ID of the user's trademark application.</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-"Successfully deleted {applicationId}"
-</pre>
-
-<h4>9. Generate Report</h4>
-<p><strong>POST</strong> <code>/generate_report</code></p>
-<p>Generates a report based on the provided request data.</p>
-
-<h5>Request Body</h5>
-<pre>
-{
+<div class="endpoint">
+    <h4>10. Generate Report</h4>
+    <p><strong>POST</strong> <code>/generate_report</code></p>
+    <p>Generates a report based on the provided request data.</p>
+    <h5>Request Body</h5>
+    <pre>{
     "journalAppId": "JN-2023-001",
     "journalNumber": "JN-2023-001",
     "ourAppIdList": ["TM-2023-001", "TM-2023-002"]
-}
-</pre>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-[
+}</pre>
+    <h5>Response</h5>
+    <pre>[
     {
         "reportId": 1,
         "journalNumber": "JN-2023-001",
@@ -383,17 +385,15 @@ Response Body:
         "journalAppId": "JN-2023-001",
         "report": "Report content"
     }
-]
-</pre>
+]</pre>
+</div>
 
-<h4>10. Get Generated Reports</h4>
-<p><strong>GET</strong> <code>/get/generated_reports</code></p>
-<p>Retrieves a list of generated reports.</p>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-[
+<div class="endpoint">
+    <h4>11. Get Generated Reports</h4>
+    <p><strong>GET</strong> <code>/get/generated_reports</code></p>
+    <p>Retrieves a list of generated reports.</p>
+    <h5>Response</h5>
+    <pre>[
     {
         "reportId": 1,
         "journalNumber": "JN-2023-001",
@@ -401,58 +401,52 @@ Response Body:
         "journalAppId": "JN-2023-001",
         "report": "Report content"
     }
-]
-</pre>
+]</pre>
+</div>
 
-<h4>11. Download Report</h4>
-<p><strong>GET</strong> <code>/get/download_report/{reportId}</code></p>
-<p>Downloads a specific report based on the report ID.</p>
-
-<h5>Path Variable</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>reportId</td>
-        <td>The ID of the report to download.</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-{
+<div class="endpoint">
+    <h4>12. Download Report</h4>
+    <p><strong>GET</strong> <code>/get/download_report/{reportId}</code></p>
+    <p>Downloads a specific report based on the report ID.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>reportId</td>
+            <td>The ID of the report to download.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>{
     "reportId": 1,
     "journalNumber": "JN-2023-001",
     "ourAppId": "TM-2023-001",
     "journalAppId": "JN-2023-001",
     "report": "Report content"
-}
-</pre>
+}</pre>
+</div>
 
-<h4>12. Delete Report</h4>
-<p><strong>GET</strong> <code>/delete/report/{reportId}</code></p>
-<p>Deletes a specific report based on the report ID.</p>
-
-<h5>Path Variable</h5>
-<table>
-    <tr>
-        <th>Parameter</th>
-        <th>Description</th>
-    </tr>
-    <tr>
-        <td>reportId</td>
-        <td>The ID of the report to delete.</td>
-    </tr>
-</table>
-
-<h5>Response</h5>
-<pre>
-Response Body:
-"Report deleted successfully"
-</pre>
+<div class="endpoint">
+    <h4>13. Delete Report</h4>
+    <p><strong>GET</strong> <code>/delete/report/{reportId}</code></p>
+    <p>Deletes a specific report based on the report ID.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>reportId</td>
+            <td>The ID of the report to delete.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>"Report deleted successfully"</pre>
+</div>
 
 </body>
 </html>
