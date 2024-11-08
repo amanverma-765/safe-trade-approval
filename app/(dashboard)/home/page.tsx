@@ -60,9 +60,7 @@ function ProductsTable({
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [matchingData, setMatchingData] = useState<MatchingData[]>([]);
   const [uniqueOurTM, setUniqueOurTM] = useState<Set<string>>(new Set());
-  const [selectedUniqueOurTM, setSelectedUniqueOurTM] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedOurTM, setSelectedOurTM] = useState<Map<number, Set<string>>>(new Map());
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   function prevPage() {
@@ -94,12 +92,14 @@ function ProductsTable({
     try {
       const response = await fetch(`${url}/scrape/our/application/${appId}`);
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        const errorData = await response.json(); // Try to get the error message
+        console.error('Error response:', errorData);
+        throw new Error(`Network response was not ok: ${errorData.message || response.statusText}`);
       }
       const data = await response.json();
       return data.tmAppliedFor;
     } catch (error) {
-      console.error('There was a problem with the fetch operation:', error);
+      console.error('Fetch operation failed:', error);
       return null;
     }
   };
@@ -189,17 +189,64 @@ function ProductsTable({
   };
 
   const handleGenerateIndividualOpposition = () => {
-    // Future implementation for generating individual opposition
-    console.log('Generating individual opposition...');
+    // Gather data for selected rows
+    const selectedOppositionData = matchingData.filter((data, index) => 
+      selectedRows.has(index.toString())
+    );
+
+    const requests = selectedOppositionData.map((data) => {
+      // Get the unique Our TM application IDs for the current row
+      const ourAppIdList = Array.from(selectedOurTM.get(matchingData.indexOf(data)) || new Set());
+
+      // Prepare the payload
+      const payload = {
+        journalAppId: data.applicationNoJournalTM,
+        journalNumber: data.applicationNoJournalTM,
+        ourAppIdList: ourAppIdList
+      };
+
+      // Send POST request
+      return fetch(`${url}/generate_report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .catch(error => {
+        console.error('Error generating individual opposition:', error);
+        alert(`Error: ${error.message}`);
+      });
+    });
+
+    // Wait for all requests to complete
+    Promise.all(requests)
+      .then(results => {
+        console.log('Individual opposition generated successfully:', results);
+        alert('Individual opposition generated successfully for selected entries.');
+      })
+      .catch(error => {
+        console.error('Error in generating oppositions:', error);
+      });
   };
 
-  const handleUniqueOurTMSelect = (ourTMValue: string) => {
-    setSelectedUniqueOurTM((prevSelected) => {
-      const updatedSelected = new Set(prevSelected);
-      if (updatedSelected.has(ourTMValue)) {
-        updatedSelected.delete(ourTMValue);
+  const handleUniqueOurTMSelect = (rowIndex: number, ourTMValue: string) => {
+    setSelectedOurTM((prevSelected) => {
+      const updatedSelected = new Map(prevSelected);
+      if (!updatedSelected.has(rowIndex)) {
+        updatedSelected.set(rowIndex, new Set());
+      }
+      const rowSet = updatedSelected.get(rowIndex)!;
+      if (rowSet.has(ourTMValue)) {
+        rowSet.delete(ourTMValue);
       } else {
-        updatedSelected.add(ourTMValue);
+        rowSet.add(ourTMValue);
       }
       return updatedSelected;
     });
@@ -328,8 +375,8 @@ function ProductsTable({
                         <div key={ourTMIndex} className="flex items-center">
                           <input
                             type="checkbox"
-                            checked={selectedUniqueOurTM.has(ourTMValue)}
-                            onChange={() => handleUniqueOurTMSelect(ourTMValue)}
+                            checked={selectedOurTM.get(index)?.has(ourTMValue) || false}
+                            onChange={() => handleUniqueOurTMSelect(index, ourTMValue)}
                             className="mr-2"
                           />
                           {ourTMValue}
