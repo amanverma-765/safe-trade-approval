@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        h1, h2, h3 {
+            color: #3f51b5;
+        }
+
+        code {
+            background-color: #e0e0e0;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        pre {
+            background-color: #e0e0e0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3f51b5;
+            color: #fff;
+        }
+
+        .endpoint {
+            background-color: #c5cae9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .endpoint h4 {
+            margin-top: 0;
+        }
+
+        .endpoint p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>API Documentation for Trademark Service</h1>
+
+<p>This document provides a detailed overview of the API endpoints available for the Trademark Service.</p>
+
+<h2>Base URL</h2>
+<p><code>http://localhost:8080/api/v1/sta</code></p>
+
+<h2>Authorization</h2>
+<p>All endpoints (except for the authentication endpoints) require a valid JWT token in the <code>Authorization</code> header.</p>
+
+<h2>Endpoints</h2>
+
+<h3>Authentication Endpoints</h3>
+
+<div class="endpoint">
+    <h4>1. Register</h4>
+    <p><strong>POST</strong> <code>/auth/register</code></p>
+    <p>Registers a new user.</p>
+    <h5>Request Body</h5>
+    <pre>{
+    "email": "user@example.com",
+    "password": "password123"
+}</pre>
+    <h5>Response</h5>
+    <pre>"User registered successfully"</pre>
+</div>
+
+<div class="endpoint">
+    <h4>2. Login</h4>
+    <p><strong>POST</strong> <code>/auth/login</code></p>
+    <p>Authenticates a user and returns a JWT token.</p>
+    <h5>Request Body</h5>
+    <pre>{
+    "email": "user@example.com",
+    "password": "password123"
+}</pre>
+    <h5>Response</h5>
+    <pre>{
+    "token": "jwt-token-here"
+}</pre>
+</div>
+
+<h3>Trademark Endpoints</h3>
+
+<div class="endpoint">
+    <h4>1. Get Latest Journals</h4>
+    <p><strong>GET</strong> <code>/get/latest_journals</code></p>
+    <p>Fetches a list of the latest journals.</p>
+    <h5>Response</h5>
+    <pre>[
+    {
+        "journalId": 1,
+        "journalNumber": "JN-2023-001",
+        "dateOfPublication": "2023-01-01",
+        "dateOfAvailability": "2023-01-15",
+        "filePath": "/path/to/journal/file",
+        "fileName": "JN-2023-001.pdf"
+    },
+    {
+        "journalId": 2,
+        "journalNumber": "JN-2023-002",
+        "dateOfPublication": "2023-02-01",
+        "dateOfAvailability": "2023-02-15",
+        "filePath": "/path/to/journal/file",
+        "fileName": "JN-2023-002.pdf"
+    }
+]</pre>
+</div>
+
+<div class="endpoint">
+    <h4>2. Get Our Trademarks</h4>
+    <p><strong>GET</strong> <code>/get/our_trademarks</code></p>
+    <p>Retrieves a list of trademarks owned by the user.</p>
+    <h5>Response</h5>
+    <pre>[
+    {
+        "tmId": 1,
+        "status": "Registered",
+        "applicationNumber": "TM-2023-001",
+        "tmClass": "Class 25",
+        "dateOfApplication": "2023-01-01",
+        "appropriateOffice": "Trademark Office",
+        "state": "Active",
+        "country": "India",
+        "filingMode": "Online",
+        "tmAppliedFor": "Brand Name",
+        "tmCategory": "Goods",
+        "tmType": "Wordmark",
+        "userDetails": "John Doe",
+        "certDetail": "Certificate No. 12345",
+        "validUpTo": "2033-01-01",
+        "proprietorName": "John Doe",
+        "proprietorAddress": "123 Main St, City, Country",
+        "emailId": "johndoe@example.com",
+        "agentName": "Agent Name",
+        "agentAddress": "456 Agent St, City, Country",
+        "publicationDetails": "Published in Journal 1"
+    }
+]</pre>
+</div>
+
+<div class="endpoint">
+    <h4>3. Scrape Journal Trademark by Application ID</h4>
+    <p><strong>GET</strong> <code>/scrape/journal/application/{applicationId}</code></p>
+    <p>Scrapes trademark information from a journal based on the provided application ID.</p>
+    <h5>Path Variables</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>applicationId</td>
+            <td>The ID of the trademark application.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>{
+    "tmId": 1,
+    "status": "Pending",
+    "applicationNumber": "TM-2023-005",
+    "tmClass": "Class 35",
+    "dateOfApplication": "2023-03-01",
+    "appropriateOffice": "Trademark Office",
+    "state": "Pending",
+    "country": "India",
+    "filingMode": "Online",
+    "tmAppliedFor": "New Brand",
+    "tmCategory": "Services",
+    "tmType": "Logo",
+    "userDetails": "Jane Doe",
+    "certDetail": null,
+    "validUpTo": "2023-03-01",
+    "proprietorName": "Jane Doe",
+    "proprietorAddress": "789 Proprietor St, City, Country",
+    "emailId": "janedoe@example.com",
+    "agentName": null,
+    "agentAddress": null,
+    "publicationDetails": "Not Published Yet"
+}</pre>
+</div>
+
+<div class="endpoint">
+    <h4>4. Scrape Our Trademark by Application ID</h4>
+    <p><strong>GET</strong> <code>/scrape/our/application/{applicationId}</code></p>
+    <p>Scrapes trademark information for a specific application ID owned by the user.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>applicationId</td>
+            <td>The ID of the user's trademark application.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>{
+    "tmId": 2,
+    "status": "Registered",
+    "applicationNumber": "TM-2023-002",
+    "tmClass": "Class 9",
+    "dateOfApplication": "2023-02-01",
+    "appropriateOffice": "Trademark Office",
+    "state": "Active",
+    "country": "India",
+    "filingMode": "Online",
+    "tmAppliedFor": "Another Brand",
+    "tmCategory": "Goods",
+    "tmType": "Wordmark",
+    "userDetails": "Jane Doe",
+    "certDetail": "Certificate No. 54321",
+    "validUpTo": "2033-02-01",
+    "proprietorName": "Jane Doe",
+    "proprietorAddress": "789 Proprietor St, City, Country",
+    "emailId": "janedoe@example.com",
+    "agentName": "Agent Name",
+    "agentAddress": "456 Agent St, City, Country",
+    "publicationDetails": "Published in Journal 2"
+}</pre>
+</div>
+
+<div class="endpoint">
+    <h4>5. Scrape Our Trademark by Excel</h4>
+    <p><strong>POST</strong> <code>/scrape/our/excel</code></p>
+    <p>Scrapes trademark information from an uploaded Excel file.</p>
+    <h5>Request Part</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>excelFile</td>
+            <td>The Excel file containing trademark application IDs.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>"Excel trademark scraped successfully"</pre>
+</div>
+
+<div class="endpoint">
+    <h4>6. Match Trademarks</h4>
+    <p><strong>GET</strong> <code>/match_trademarks/{journalNumbers}</code></p>
+    <p>Finds matching trademarks based on a list of journal numbers.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>journalNumbers</td>
+            <td>A string of journal numbers separated by "&".</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>[
+    {
+        "matchResultId": 1,
+        "journalAppNumber": "JN-2023-001",
+        "ourTrademarkAppNumbers": ["TM-2023-001", "TM-2023-002"],
+        "tmClass": "Class 25",
+        "journalNumber": "JN-2023-001"
+    },
+    {
+        "matchResultId": 2,
+        "journalAppNumber": "JN-2023-002",
+        "ourTrademarkAppNumbers": ["TM-2023-003"],
+        "tmClass": "Class 9",
+        "journalNumber": "JN-2023-002"
+    }
+]</pre>
+</div>
+
+<div class="endpoint">
+    <h4>7. Get Matching Result</h4>
+    <p><strong>GET</strong> <code>/get/matching_result/{journalNumbers}</code></p>
+    <p>Retrieves matching results for the specified journal numbers.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>journalNumbers</td>
+            <td>A string of journal numbers separated by "&".</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>[
+    {
+        "matchResultId": 1,
+        "journalAppNumber": "JN-2023-001",
+        "ourTrademarkAppNumbers": ["TM-2023-001", "TM-2023-002"],
+        "tmClass": "Class 25",
+        "journalNumber": "JN-2023-001"
+    },
+    {
+        "matchResultId": 2,
+        "journalAppNumber": "JN-2023-002",
+        "ourTrademarkAppNumbers": ["TM-2023-003"],
+        "tmClass": "Class 9",
+        "journalNumber": "JN-2023-002"
+    }
+]</pre>
+</div>
+
+<div class="endpoint">
+    <h4>8. Start Schedule Task</h4>
+    <p><strong>GET</strong> <code>/start_schedule_task</code></p>
+    <p>Manually starts a scheduled task.</p>
+    <h5>Response</h5>
+    <pre>"Schedule task finished successfully"</pre>
+</div>
+
+<div class="endpoint">
+    <h4>9. Delete Our Trademark</h4>
+    <p><strong>GET</strong> <code>/delete/our/application/{applicationId}</code></p>
+    <p>Deletes a trademark owned by the user based on the application ID.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>applicationId</td>
+            <td>The ID of the user's trademark application.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>"Successfully deleted {applicationId}"</pre>
+</div>
+
+<div class="endpoint">
+    <h4>10. Generate Report</h4>
+    <p><strong>POST</strong> <code>/generate_report</code></p>
+    <p>Generates a report based on the provided request data.</p>
+    <h5>Request Body</h5>
+    <pre>{
+    "journalAppId": "JN-2023-001",
+    "journalNumber": "JN-2023-001",
+    "ourAppIdList": ["TM-2023-001", "TM-2023-002"]
+}</pre>
+    <h5>Response</h5>
+    <pre>[
+    {
+        "reportId": 1,
+        "journalNumber": "JN-2023-001",
+        "ourAppId": "TM-2023-001",
+        "journalAppId": "JN-2023-001",
+        "report": "Report content"
+    }
+]</pre>
+</div>
+
+<div class="endpoint">
+    <h4>11. Get Generated Reports</h4>
+    <p><strong>GET</strong> <code>/get/generated_reports</code></p>
+    <p>Retrieves a list of generated reports.</p>
+    <h5>Response</h5>
+    <pre>[
+    {
+        "reportId": 1,
+        "journalNumber": "JN-2023-001",
+        "ourAppId": "TM-2023-001",
+        "journalAppId": "JN-2023-001",
+        "report": "Report content"
+    }
+]</pre>
+</div>
+
+<div class="endpoint">
+    <h4>12. Download Report</h4>
+    <p><strong>GET</strong> <code>/get/download_report/{reportId}</code></p>
+    <p>Downloads a specific report based on the report ID.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>reportId</td>
+            <td>The ID of the report to download.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>{
+    "reportId": 1,
+    "journalNumber": "JN-2023-001",
+    "ourAppId": "TM-2023-001",
+    "journalAppId": "JN-2023-001",
+    "report": "Report content"
+}</pre>
+</div>
+
+<div class="endpoint">
+    <h4>13. Delete Report</h4>
+    <p><strong>GET</strong> <code>/delete/report/{reportId}</code></p>
+    <p>Deletes a specific report based on the report ID.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>reportId</td>
+            <td>The ID of the report to delete.</td>
+        </tr>
+    </table>
+    <h5>Response</h5>
+    <pre>"Report deleted successfully"</pre>
+</div>
+
+</body>
+</html>
