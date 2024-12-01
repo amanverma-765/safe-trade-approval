@@ -25,13 +25,13 @@ import {
   TooltipContent,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import { Analytics } from '@vercel/analytics/react';
 import { User } from './user';
-import { VercelLogo } from '@/components/icons';
 import Providers from './providers';
 import { NavItem } from './nav-item';
 import { SearchInput } from './search';
 import { auth } from '@/lib/auth'; // Import your auth logic
+import Image from 'next/image';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({
   children
@@ -39,6 +39,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth(); // Fetch user session
+
+  if (!session) {
+    redirect('/login');
+  }
+
   const user = session?.user; // Extract user data
 
   return (
@@ -50,13 +55,13 @@ export default async function DashboardLayout({
             <MobileNav />
             <DashboardBreadcrumb />
             <SearchInput />
-            <User user={user} /> {/* Pass the user data to the User component */}
+            <User user={user} />{' '}
+            {/* Pass the user data to the User component */}
           </header>
           <main className="grid flex-1 items-start gap-2 p-4 sm:px-6 sm:py-0 md:gap-4 bg-muted/40">
             {children}
           </main>
         </div>
-        <Analytics />
       </main>
     </Providers>
   );
@@ -68,13 +73,13 @@ function DesktopNav() {
       <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
         <Link
           href="https://trademark.webxela.com"
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
+          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
         >
-          <VercelLogo className="h-3 w-3 transition-all group-hover:scale-110" />
+          <Image src="/logo.png" width="35" height="35" alt="logo" />
           <span className="sr-only">Trademark - WEBXELA</span>
         </Link>
 
-        <NavItem href="/home" label="Dashboard">
+        <NavItem href="/" label="Dashboard">
           <Home className="h-5 w-5" />
         </NavItem>
 
@@ -86,11 +91,9 @@ function DesktopNav() {
           <Users2 className="h-5 w-5" />
         </NavItem>
 
-        <NavItem href="/" label="Dashboard">
+        {/* <NavItem href="/" label="Dashboard">
           <Package className="h-5 w-5" />
-        </NavItem>
-
-        
+        </NavItem> */}
 
         {/* <NavItem href="#" label="Analytics">
           <LineChart className="h-5 w-5" />

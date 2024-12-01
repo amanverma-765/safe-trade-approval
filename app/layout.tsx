@@ -1,11 +1,13 @@
+import { auth } from '@/lib/auth';
 import './globals.css';
-
-import { Analytics } from '@vercel/analytics/react';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'Trademark - SafeTradeApprovals',
-  description:
-    'Trademark Automation Software - Powered by webxela.com'
+  description: 'Trademark Automation Software - Powered by webxela.com',
+  icons: {
+    icon: '/logo.png'
+  }
 };
 
 export default function RootLayout({
@@ -13,10 +15,13 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const session = auth();
+  if (!session) {
+    redirect('/login');
+  }
   return (
     <html lang="en">
       <body className="flex min-h-screen w-full flex-col">{children}</body>
-      <Analytics />
     </html>
   );
 }

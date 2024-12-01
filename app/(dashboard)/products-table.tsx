@@ -31,14 +31,16 @@ export function ProductsTable({
   totalProducts: number;
 }) {
   let router = useRouter();
-  let productsPerPage = 5;
+  const productsPerPage = 5;
 
   function prevPage() {
-    router.back();
+    const newOffset = Math.max(offset - productsPerPage, productsPerPage);
+    router.push(`/?offset=${newOffset}`, { scroll: false });
   }
 
   function nextPage() {
-    router.push(`/?offset=${offset}`, { scroll: false });
+    const newOffset = Math.min(offset + productsPerPage, totalProducts);
+    router.push(`/?offset=${newOffset}`, { scroll: false });
   }
 
   return (
@@ -80,7 +82,7 @@ export function ProductsTable({
           <div className="text-xs text-muted-foreground">
             Showing{' '}
             <strong>
-              {Math.min(offset - productsPerPage, totalProducts) + 1}-{offset}
+              {offset - productsPerPage + 1}-{Math.min(offset, totalProducts)}
             </strong>{' '}
             of <strong>{totalProducts}</strong> products
           </div>
