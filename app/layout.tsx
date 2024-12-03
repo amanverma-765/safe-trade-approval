@@ -6,7 +6,7 @@ export const metadata = {
   title: 'Trademark - SafeTradeApprovals',
   description: 'Trademark Automation Software - Powered by webxela.com',
   icons: {
-    icon: '/logo.png'
+    icon: '/logo.svg'
   }
 };
 

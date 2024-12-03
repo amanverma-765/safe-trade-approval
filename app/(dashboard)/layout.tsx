@@ -75,7 +75,7 @@ function DesktopNav() {
           href="https://trademark.webxela.com"
           className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
         >
-          <Image src="/logo.png" width="35" height="35" alt="logo" />
+          <Image src="/logo.svg" width="35" height="35" alt="logo" />
           <span className="sr-only">Trademark - WEBXELA</span>
         </Link>
 

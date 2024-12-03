@@ -527,9 +527,7 @@ function ProductsTable({
                           )
                         )}
                       </TableHead>
-                      <TableHead>
-                        {data.journalTM?.[0]?.applicationNumber}
-                      </TableHead>
+                      <TableHead>{data.journalTM?.[0]?.tmAppliedFor}</TableHead>
                       <TableHead>
                         {data.ourTM.map((ourTMValue, ourTMIndex) => (
                           <div key={ourTMIndex} className="flex items-center">
