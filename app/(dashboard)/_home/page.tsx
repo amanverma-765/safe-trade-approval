@@ -36,11 +36,15 @@ interface OurTm {
 }
 
 // Define the type for the table that shows after generating Excel
+interface OurTmData {
+  tmApplicationNumber: string;
+  tmAppliedFor: string;
+}
+
 interface MatchingData {
   applicationNoJournalTM: string;
-  applicationNoOurTM: string[];
+  ourMatchedTrademarks: OurTmData[];
   journalTM: string;
-  ourTM: Array<OurTm>;
   class: string;
 }
 
@@ -93,53 +97,6 @@ function ProductsTable({
     });
   };
 
-  const fetchOurTm = async (appIds: Array<string>) => {
-    try {
-      const response = await fetch(`${url}/scrape/our/application`, {
-        method: 'POST',
-        body: JSON.stringify(appIds),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        const errorData = await response.json(); // Try to get the error message
-        console.error('Error response:', errorData);
-        throw new Error(
-          `Network response was not ok: ${errorData.message || response.statusText}`
-        );
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Fetch operation failed:', error);
-      return null;
-    }
-  };
-
-  const fetchJournalTm = async (appIds: Array<string>, journalNo: string) => {
-    try {
-      const response = await fetch(`${url}/scrape/journal/application`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          applicationIds: appIds,
-          journalNumber: journalNo
-        })
-      });
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('There was a problem with the fetch operation:', error);
-      return null;
-    }
-  };
-
   const handleSearchReport = async () => {
     const selectedJournals = journals.filter((journal) =>
       selectedRows.has(journal.journalNo)
@@ -167,33 +124,31 @@ function ProductsTable({
 
           const data = await matchedTrademarks.json();
 
-          const mappedData = await Promise.all(
-            data.map(
-              async (item: {
-                ourTrademarkAppNumbers: any[];
-                journalAppNumber: string;
-                tmClass: any;
-                journalNumber: string;
-              }) => {
-                const ourTmPromise = fetchOurTm(item.ourTrademarkAppNumbers);
-                const journalTmPromise = fetchJournalTm(
-                  item.ourTrademarkAppNumbers,
-                  item.journalNumber
-                );
-
-                const [ourTmAppIdList, journalTm] = await Promise.all([
-                  ourTmPromise,
-                  journalTmPromise
-                ]);
-                return {
-                  applicationNoJournalTM: item.journalAppNumber,
-                  applicationNoOurTM: item.ourTrademarkAppNumbers,
-                  journalTM: journalTm,
-                  ourTM: ourTmAppIdList.filter(Boolean),
-                  class: item.tmClass
-                };
-              }
-            )
+          const mappedData: MatchingData[] = data.map(
+            (item: {
+              journalNumber: string;
+              tmClass: string;
+              journalTrademark: {
+                tmApplicationNumber: string;
+                tmAppliedFor: string;
+                tmClass: string;
+              };
+              ourTrademarks: Array<{
+                tmApplicationNumber: string;
+                tmAppliedFor: string;
+                tmClass: string;
+              }>;
+            }) => {
+              return {
+                applicationNoJournalTM: item.journalTrademark.tmApplicationNumber,
+                ourMatchedTrademarks: item.ourTrademarks.map((tm) => ({
+                  tmApplicationNumber: tm.tmApplicationNumber,
+                  tmAppliedFor: tm.tmAppliedFor,
+                })),
+                journalTM: item.journalTrademark.tmAppliedFor,
+                class: item.tmClass,
+              };
+            }
           );
 
           setMatchingData((prevMappedMap) => {
@@ -202,13 +157,13 @@ function ProductsTable({
             return updatedMappedMap;
           });
 
-          const allOurTM = new Set<string>();
-          mappedData.forEach((data) => {
-            data.ourTM.forEach((ourTMObject: { tmAppliedFor: string }) =>
-              allOurTM.add(ourTMObject.tmAppliedFor)
-            );
-          });
-          setUniqueOurTM((prevTM) => prevTM.union(allOurTM));
+          // const allOurTM = new Set<string>();
+          // mappedData.forEach((data: { ourTM: { tmAppliedFor: string }[] }) => {
+          //   data.ourTM.forEach((ourTMObject: { tmAppliedFor: string }) =>
+          //     allOurTM.add(ourTMObject.tmAppliedFor)
+          //   );
+          // });
+          // setUniqueOurTM((prevTM) => prevTM.union(allOurTM));
           setIsLoading(false);
           // return response.json();
         } catch (error) {
@@ -219,80 +174,6 @@ function ProductsTable({
         }
       })
     );
-
-    // const query = selectedJournals.map((item) => item.journalNo).join('&');
-    // setIsLoading(true);
-
-    // fetch(`${url}/match_trademarks/${query}`)
-    //   .then((response) => {
-    //     if (!response.ok) {
-    //       return response.json().then((errorData) => {
-    //         throw new Error(`Error: ${errorData.status} ${errorData.message}`);
-    //       });
-    //     }
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     return Promise.all(
-    //       data.map(
-    //         async (item: {
-    //           ourTrademarkAppNumbers: any[];
-    //           journalAppNumber: string;
-    //           tmClass: any;
-    //           journalNumber: string;
-    //         }) => {
-    //           const ourTmPromise = fetchOurTm(item.ourTrademarkAppNumbers);
-    //           const journalTmPromise = fetchJournalTm(
-    //             item.ourTrademarkAppNumbers,
-    //             item.journalNumber
-    //           );
-
-    //           const [ourTmAppIdList, journalTm] = await Promise.all([
-    //             ourTmPromise,
-    //             journalTmPromise
-    //           ]);
-    //           return {
-    //             applicationNoJournalTM: item.journalAppNumber,
-    //             applicationNoOurTM: item.ourTrademarkAppNumbers,
-    //             journalTM: journalTm,
-    //             ourTM: ourTmAppIdList.filter(Boolean),
-    //             class: item.tmClass,
-    //             journalNumber: item.journalNumber
-    //           };
-    //         }
-    //       )
-    //     );
-    //   })
-    //   .then((mappedData) => {
-    //     setMatchingData((prevMappedData) => {
-    //       const updatedMappedData = new Map(prevMappedData);
-    //       mappedData.forEach((data) => {
-    //         const journalNumber = data.journalNumber;
-    //         if (!updatedMappedData.has(journalNumber)) {
-    //           updatedMappedData.set(journalNumber, []);
-    //         }
-    //         updatedMappedData.get(journalNumber)!.push(data);
-    //       });
-    //       return updatedMappedData;
-    //     });
-
-    //     const allOurTM = new Set<string>();
-    //     mappedData.forEach((data) => {
-    //       data.ourTM.forEach((ourTMObject: { tmAppliedFor: string }) =>
-    //         allOurTM.add(ourTMObject.tmAppliedFor)
-    //       );
-    //     });
-    //     setUniqueOurTM(allOurTM);
-    //   })
-    //   .catch((error) => {
-    //     console.error('Error:', error);
-    //     alert(error.message);
-    //   })
-    //   .finally(() => {
-    //     setTimeout(() => {
-    //       setIsLoading(false);
-    //     }, 200);
-    //   });
   };
 
   const handleGenerateIndividualOpposition = async () => {
@@ -484,8 +365,8 @@ function ProductsTable({
               <TableHeader>
                 <TableRow>
                   <TableHead>Select</TableHead>
-                  <TableHead>Application no of Journal TM</TableHead>
-                  <TableHead>Application no. of Our TM</TableHead>
+                  <TableHead>Application No. of Journal TM</TableHead>
+                  <TableHead>Application No. of Our TM</TableHead>
                   <TableHead>Journal TM</TableHead>
                   <TableHead>Our TM</TableHead>
                   <TableHead>Class</TableHead>
@@ -497,7 +378,7 @@ function ProductsTable({
                     dataArray.map((data, index) => ({
                       journalNumber,
                       data,
-                      index
+                      index,
                     }))
                   )
                   .slice(
@@ -506,52 +387,59 @@ function ProductsTable({
                   )
                   .map(({ journalNumber, data, index }) => (
                     <TableRow key={`${journalNumber}-${index}`}>
+                      {/* Select Checkbox */}
                       <TableHead>
                         <input
                           type="checkbox"
-                          checked={selectedRows.has(
-                            data.applicationNoJournalTM
-                          )}
+                          checked={selectedRows.has(data.applicationNoJournalTM)}
                           onChange={() =>
                             handleRowSelect(data.applicationNoJournalTM)
                           }
                         />
                       </TableHead>
+
+                      {/* Application No. of Journal TM */}
                       <TableHead>{data.applicationNoJournalTM}</TableHead>
+
+                      {/* Application No. of Our TM */}
                       <TableHead>
-                        {data.applicationNoOurTM.map(
-                          (ourTmAppId, ourTmIndex) => (
-                            <div key={ourTmIndex} className="flex items-center">
-                              {ourTmAppId}
-                            </div>
-                          )
-                        )}
+                        {data.ourMatchedTrademarks.map((tm, tmIndex) => (
+                          <div key={tmIndex} className="flex items-center">
+                            {tm.tmApplicationNumber}
+                          </div>
+                        ))}
                       </TableHead>
-                      <TableHead>{data.journalTM?.[0]?.tmAppliedFor}</TableHead>
+
+                      {/* Journal TM */}
+                      <TableHead>{data.journalTM}</TableHead>
+
+                      {/* Our TM */}
                       <TableHead>
-                        {data.ourTM.map((ourTMValue, ourTMIndex) => (
-                          <div key={ourTMIndex} className="flex items-center">
+                        {data.ourMatchedTrademarks.map((tm, tmIndex) => (
+                          <div key={tmIndex} className="flex items-center">
                             <input
                               type="checkbox"
                               checked={
                                 selectedOurTM
                                   .get(journalNumber)
                                   ?.get(data.applicationNoJournalTM)
-                                  ?.has(ourTMValue.applicationNumber) ?? false
+                                  ?.has(tm.tmApplicationNumber) ?? false
                               }
                               onChange={() =>
                                 handleUniqueOurTMSelect(
                                   journalNumber,
                                   data.applicationNoJournalTM,
-                                  ourTMValue.applicationNumber
+                                  tm.tmApplicationNumber
                                 )
                               }
                               className="mr-2"
                             />
-                            {ourTMValue.tmAppliedFor}
+                            {tm.tmAppliedFor}
                           </div>
                         ))}
                       </TableHead>
+
+                      {/* Class */}
                       <TableHead>{data.class}</TableHead>
                     </TableRow>
                   ))}
@@ -607,7 +495,7 @@ function ProductsTable({
             </div>
           </CardFooter>
         </Card>
-      )}
+        )}
     </>
   );
 }
