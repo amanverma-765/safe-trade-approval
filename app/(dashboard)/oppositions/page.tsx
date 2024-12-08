@@ -10,6 +10,8 @@ interface PDFReport {
   title: string;
   report_id: string;
   journal_number: string;
+  our_app_id: string;
+  journal_app_id: string;
 }
 
 const url = process.env.NEXT_PUBLIC_API_URL;
@@ -121,13 +123,17 @@ const useReports = () => {
       .then(data => {
         const mappedReport: PDFReport[] = data.map(
           (item: {
-            reportId: string;
             report: string;
+            reportId: string;
             journalNumber: string;
+            ourAppId: string;
+            journalAppId: string;
           }) => ({
-            title: item.report,
+            title: item.report.replace(/_/g, ' ').replace(/\.pdf$/, ''),
             report_id: item.reportId,
-            journal_number: item.journalNumber
+            journal_number: item.journalNumber,
+            our_app_id: item.ourAppId,
+            journal_app_id: item.journalAppId
           })
         );
         setReports(mappedReport);
@@ -141,7 +147,7 @@ const useReports = () => {
         }, 200);
       });
   };
-
+  
   const handleDelete = (reportId: string) => {
     setIsDeleting(true);
 
@@ -176,30 +182,57 @@ const ReportCard: React.FC<{
   onDelete: (reportId: string) => void;
   disabled?: boolean;
 }> = ({ report, onView, onDownload, onDelete, disabled }) => (
-  <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow hover:shadow-lg transition-all duration-300">
-    <span className="font-medium">{report.title}</span>
-    <span>{report.journal_number}</span>
-    <div className="flex space-x-2">
-      <Button
-        onClick={() => onView(report.report_id)}
-        className="bg-blue-600 text-white hover:bg-blue-500 transition-all duration-300"
-        disabled={disabled}
-      >
-        View
-      </Button>
-      <Button
-        onClick={() => onDownload(report.report_id)}
-        className="bg-green-600 text-white hover:bg-green-500 transition-all duration-300"
-        disabled={disabled}
-      >
-        Download
-      </Button>
-      <div>
-        <DeleteButton onClick={() => onDelete(report.report_id)} />
+  <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+    <div className="flex justify-between items-center space-x-4">
+      {/* Report Title */}
+      <div className="flex-1">
+        <h3 className="text-lg font-bold text-gray-800 truncate">
+          {report.title}
+        </h3>
+        <div className="text-sm text-gray-600 mt-2">
+          <p className="mb-2">
+            <span className="font-medium mr-2">Journal Number:</span>
+            <span className="text-gray-800">{report.journal_number}</span>
+          </p>
+          <p className="mb-2">
+            <span className="font-medium mr-2">Our Trademark:</span>
+            <span className="text-gray-800">{report.our_app_id}</span>
+          </p>
+          <p>
+            <span className="font-medium mr-2">Conflicting Trademark:</span>
+            <span className="text-gray-800">{report.journal_app_id}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex space-x-2">
+        <Button
+          onClick={() => onView(report.report_id)}
+          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-400 transition duration-200"
+          disabled={disabled}
+        >
+          View
+        </Button>
+        <Button
+          onClick={() => onDownload(report.report_id)}
+          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-400 transition duration-200"
+          disabled={disabled}
+        >
+          Download
+        </Button>
+        <Button
+          onClick={() => onDelete(report.report_id)}
+          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-400 transition duration-200"
+          disabled={disabled}
+        >
+          Delete
+        </Button>
       </div>
     </div>
   </div>
 );
+
 
 const ReportViewer = () => {
   const { reports, isLoading, isDeleting, handleDelete } = useReports();
@@ -208,30 +241,35 @@ const ReportViewer = () => {
   const isProcessing = isLoading || isDeleting || isPdfProcessing;
 
   return (
-    <div>
+    <div className="p-4">
       {isProcessing ? (
         <CircularLoader />
       ) : (
-        <div className="flex flex-col w-full h-full bg-gray-100 p-4">
+        <div className="flex flex-col w-full h-full bg-gray-100">
           <Card className="w-full">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-left">
-                Reports
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold text-left">Reports</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {reports.reverse().map((report) => (
-                  <ReportCard
-                    key={report.report_id}
-                    report={report}
-                    onView={(id) => handlePdf(id, false)}
-                    onDownload={(id) => handlePdf(id, true)}
-                    onDelete={handleDelete}
-                    disabled={isProcessing}
-                  />
-                ))}
-              </div>
+              {reports.length === 0 ? (
+                <div className="text-center text-gray-600 py-8">
+                  <p className="text-xl">No opposition reports available</p>
+                  <p className="text-sm">Once reports are generated, they will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reports.reverse().map((report) => (
+                    <ReportCard
+                      key={report.report_id}
+                      report={report}
+                      onView={(id) => handlePdf(id, false)}
+                      onDownload={(id) => handlePdf(id, true)}
+                      onDelete={handleDelete}
+                      disabled={isProcessing}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

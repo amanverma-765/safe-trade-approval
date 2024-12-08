@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
+import { map } from 'zod';
 
 // Define the type for the Journal entries
 interface JournalEntry {
@@ -98,6 +99,9 @@ function ProductsTable({
   };
 
   const handleSearchReport = async () => {
+
+    setMatchingData(new Map()); // This will reset the Map to an empty state.
+
     const selectedJournals = journals.filter((journal) =>
       selectedRows.has(journal.journalNo)
     );
@@ -156,16 +160,8 @@ function ProductsTable({
             updatedMappedMap.set(selectedJournal.journalNo, mappedData);
             return updatedMappedMap;
           });
-
-          // const allOurTM = new Set<string>();
-          // mappedData.forEach((data: { ourTM: { tmAppliedFor: string }[] }) => {
-          //   data.ourTM.forEach((ourTMObject: { tmAppliedFor: string }) =>
-          //     allOurTM.add(ourTMObject.tmAppliedFor)
-          //   );
-          // });
-          // setUniqueOurTM((prevTM) => prevTM.union(allOurTM));
+          
           setIsLoading(false);
-          // return response.json();
         } catch (error) {
           console.error('Fetch operation failed:', error);
           return null;
@@ -177,45 +173,52 @@ function ProductsTable({
   };
 
   const handleGenerateIndividualOpposition = async () => {
-    // Gather data for selected rows
     try {
-      const oppositionData: Array<{
-        journalAppId: string;
-        journalNumber: string;
-        ourAppIdList: string[];
-      }> = [];
 
-      selectedOurTM.forEach((journalAppIdMap, journalNumber) => {
-        journalAppIdMap.forEach((ourAppIdList, journalAppId) => {
-          oppositionData.push({
+      setIsLoading(true);
+      // Prepare data for opposition generation
+      const oppositionData = Array.from(selectedOurTM.entries()).flatMap(
+        ([journalNumber, journalAppIdMap]) =>
+          Array.from(journalAppIdMap.entries()).map(([journalAppId, ourAppIdList]) => ({
             journalAppId,
             journalNumber,
-            ourAppIdList: Array.from(ourAppIdList)
-          });
-        });
-      });
+            ourAppIdList: Array.from(ourAppIdList),
+          }))
+      );
 
-      const res = await Promise.all(
+      // Make API calls for opposition generation
+      const responses = await Promise.all(
         oppositionData.map((opposition) =>
           fetch(`${url}/generate_report`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify(opposition)
+            body: JSON.stringify(opposition),
           })
         )
       );
 
-      console.log(res);
+      // Collect results from all API calls
+      const data = await Promise.all(
+        responses.map((response) => {
+          if (!response.ok) {
+            throw new Error(`Failed to generate report: ${response.statusText}`);
+          }
+          return response.json();
+        })
+      );
 
-      const data = await Promise.all(res.map((entry) => entry.json()));
       console.log('Individual opposition generated successfully:', data);
       alert(
         'Individual opposition generated successfully for selected entries.'
       );
+      window.open('/oppositions', '_blank');
     } catch (error) {
-      console.error(error);
+      console.error('Error generating opposition:', error);
+      alert('An error occurred while generating individual opposition reports.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -224,36 +227,42 @@ function ProductsTable({
     applicationNoJournalTM: string,
     ourTMValue: string
   ) => {
-    console.log('Selecting:', {
+    console.log('Toggling selection:', {
       journalNo,
       applicationNoJournalTM,
-      ourTMValue
-    }); // Debug log
+      ourTMValue,
+    });
 
     setSelectedOurTM((prevSelected) => {
-      // Create new Map instances to ensure state updates
+      // Create deep copies of the Maps to ensure immutability
       const updatedSelected = new Map(prevSelected);
-      const journalMap = new Map(updatedSelected.get(journalNo) || new Map());
-      const applicationSet = new Set(
-        journalMap.get(applicationNoJournalTM) || new Set()
-      );
+      const journalMap = new Map(updatedSelected.get(journalNo) || []);
+      const applicationSet = new Set(journalMap.get(applicationNoJournalTM) || []);
 
-      // Toggle the value
+      // Toggle the value in the set
       if (applicationSet.has(ourTMValue)) {
         applicationSet.delete(ourTMValue);
       } else {
         applicationSet.add(ourTMValue);
       }
 
-      // Update the nested maps
-      journalMap.set(applicationNoJournalTM, applicationSet);
-      updatedSelected.set(journalNo, journalMap);
+      // Update the maps
+      if (applicationSet.size > 0) {
+        journalMap.set(applicationNoJournalTM, applicationSet);
+      } else {
+        journalMap.delete(applicationNoJournalTM);
+      }
+
+      if (journalMap.size > 0) {
+        updatedSelected.set(journalNo, journalMap);
+      } else {
+        updatedSelected.delete(journalNo);
+      }
 
       return updatedSelected;
     });
   };
 
-  const handleAllOurTMSelect = (rowIndex: number) => {};
 
   const prevReportPage = () => {
     setCurrentReportPage((prev) => Math.max(0, prev - 1));
