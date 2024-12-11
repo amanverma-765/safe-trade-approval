@@ -162,10 +162,10 @@ const CompanySelectionComponent = () => {
     })
       .then(async (response) => {
         if (!response.ok) {
-          const errorResponse = await response.json();
-          const errorMessage = `Error: ${response.status} ${errorResponse.message}`;
-          alert(errorMessage);
-          throw new Error(errorMessage);
+          return response.json().then((errorResponse) => {
+            const firstError = errorResponse[0]?.message || "An unknown error occurred.";
+            alert(firstError);
+          });
         }
         return response.json();
       })
