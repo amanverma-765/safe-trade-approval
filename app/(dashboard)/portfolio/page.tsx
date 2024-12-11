@@ -144,17 +144,28 @@ const CompanySelectionComponent = () => {
       return;
     }
 
-    setLoading(true);
-    const finalUrl = `${url}/scrape/our/application/${applicationId}`;
+    const applicationIds = applicationId.split(',').map(id => id.trim());
+    if (applicationIds.length === 0 || applicationIds.some(id => id === '')) {
+      alert("Please provide valid application IDs separated by commas.");
+      return;
+    }
 
-    fetch(finalUrl)
-      .then((response) => {
+    setLoading(true);
+    const finalUrl = `${url}/scrape/our/application`;
+
+    fetch(finalUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(applicationIds)
+    })
+      .then(async (response) => {
         if (!response.ok) {
-          return response.json().then((errorResponse) => {
-            const errorMessage = `Error: ${response.status} ${errorResponse.message}`;
-            alert(errorMessage);
-            throw new Error(errorMessage);
-          });
+          const errorResponse = await response.json();
+          const errorMessage = `Error: ${response.status} ${errorResponse.message}`;
+          alert(errorMessage);
+          throw new Error(errorMessage);
         }
         return response.json();
       })
