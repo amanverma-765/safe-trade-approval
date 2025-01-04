@@ -99,7 +99,6 @@ function ProductsTable({
   };
 
   const handleSearchReport = async () => {
-
     setMatchingData(new Map()); // This will reset the Map to an empty state.
 
     const selectedJournals = journals.filter((journal) =>
@@ -115,72 +114,69 @@ function ProductsTable({
     try {
       const matchedTrademarks = await fetch(`${url}/match_trademarks/${query}`);
 
-          if (!matchedTrademarks.ok) {
-            return matchedTrademarks.json().then((errorData) => {
-              throw new Error(
-                `Error: ${errorData.status} ${errorData.message}`
-              );
-            });
-          }
+      if (!matchedTrademarks.ok) {
+        return matchedTrademarks.json().then((errorData) => {
+          throw new Error(`Error: ${errorData.status} ${errorData.message}`);
+        });
+      }
 
-          const data = await matchedTrademarks.json();
+      const data = await matchedTrademarks.json();
 
-          const mappedData: MatchingData[] = data.map(
-            (item: {
-              journalNumber: string;
-              tmClass: string;
-              journalTrademark: {
-                tmApplicationNumber: string;
-                tmAppliedFor: string;
-                tmClass: string;
-              };
-              ourTrademarks: Array<{
-                tmApplicationNumber: string;
-                tmAppliedFor: string;
-                tmClass: string;
-              }>;
-            }) => {
-              return {
-                applicationNoJournalTM: item.journalTrademark.tmApplicationNumber,
-                ourMatchedTrademarks: item.ourTrademarks.map((tm) => ({
-                  tmApplicationNumber: tm.tmApplicationNumber,
-                  tmAppliedFor: tm.tmAppliedFor,
-                })),
-                journalTM: item.journalTrademark.tmAppliedFor,
-                class: item.tmClass,
-              };
-            }
-          );
-
-          setMatchingData((prevMappedMap) => {
-            const updatedMappedMap = new Map(prevMappedMap);
-            updatedMappedMap.set(selectedJournal.journalNo, mappedData);
-            return updatedMappedMap;
-          });
-          
-          setIsLoading(false);
-        } catch (error) {
-          console.error('Fetch operation failed:', error);
-          return null;
-        } finally {
-          setIsLoading(false);
+      const mappedData: MatchingData[] = data.map(
+        (item: {
+          journalNumber: string;
+          tmClass: string;
+          journalTrademark: {
+            tmApplicationNumber: string;
+            tmAppliedFor: string;
+            tmClass: string;
+          };
+          ourTrademarks: Array<{
+            tmApplicationNumber: string;
+            tmAppliedFor: string;
+            tmClass: string;
+          }>;
+        }) => {
+          return {
+            applicationNoJournalTM: item.journalTrademark.tmApplicationNumber,
+            ourMatchedTrademarks: item.ourTrademarks.map((tm) => ({
+              tmApplicationNumber: tm.tmApplicationNumber,
+              tmAppliedFor: tm.tmAppliedFor
+            })),
+            journalTM: item.journalTrademark.tmAppliedFor,
+            class: item.tmClass
+          };
         }
-      })
-    );
+      );
+
+      setMatchingData((prevMappedMap) => {
+        const updatedMappedMap = new Map(prevMappedMap);
+        updatedMappedMap.set(selectedJournal.journalNo, mappedData);
+        return updatedMappedMap;
+      });
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Fetch operation failed:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGenerateIndividualOpposition = async () => {
     try {
-
-      setIsLoading(true);
+      // setIsLoading(true);
       // Prepare data for opposition generation
       const oppositionData = Array.from(selectedOurTM.entries()).flatMap(
         ([journalNumber, journalAppIdMap]) =>
-          Array.from(journalAppIdMap.entries()).map(([journalAppId, ourAppIdList]) => ({
-            journalAppId,
-            journalNumber,
-            ourAppIdList: Array.from(ourAppIdList),
-          }))
+          Array.from(journalAppIdMap.entries()).map(
+            ([journalAppId, ourAppIdList]) => ({
+              journalAppId,
+              journalNumber,
+              ourAppIdList: Array.from(ourAppIdList)
+            })
+          )
       );
 
       // Make API calls for opposition generation
@@ -189,9 +185,9 @@ function ProductsTable({
           fetch(`${url}/generate_report`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type': 'application/json'
             },
-            body: JSON.stringify(opposition),
+            body: JSON.stringify(opposition)
           })
         )
       );
@@ -200,7 +196,9 @@ function ProductsTable({
       const data = await Promise.all(
         responses.map((response) => {
           if (!response.ok) {
-            throw new Error(`Failed to generate report: ${response.statusText}`);
+            throw new Error(
+              `Failed to generate report: ${response.statusText}`
+            );
           }
           return response.json();
         })
@@ -213,7 +211,9 @@ function ProductsTable({
       window.open('/oppositions', '_blank');
     } catch (error) {
       console.error('Error generating opposition:', error);
-      alert('An error occurred while generating individual opposition reports.');
+      alert(
+        'An error occurred while generating individual opposition reports.'
+      );
     } finally {
       setIsLoading(false);
     }
