@@ -150,75 +150,103 @@ function ProductsTable({
     }
 
     setIsLoading(true);
-    await Promise.all(
-      selectedJournals.map(async (selectedJournal) => {
-        try {
-          const matchedTrademarks = await fetch(
-            `${url}/match_trademarks/${selectedJournal.journalNo}`
-          );
+    const query = selectedJournals.map((item) => item.journalNo).join('&');
+    try {
+      const matchedTrademarks = await fetch(`${url}/match_trademarks/${query}`);
 
-          if (!matchedTrademarks.ok) {
-            return matchedTrademarks.json().then((errorData) => {
-              throw new Error(
-                `Error: ${errorData.status} ${errorData.message}`
-              );
-            });
-          }
+      if (!matchedTrademarks.ok) {
+        return matchedTrademarks.json().then((errorData) => {
+          throw new Error(`Error: ${errorData.status} ${errorData.message}`);
+        });
+      }
 
-          const data = await matchedTrademarks.json();
+      const matchedEntries = await matchedTrademarks.json();
 
-          const mappedData = await Promise.all(
-            data.map(
-              async (item: {
-                ourTrademarkAppNumbers: any[];
-                journalAppNumber: string;
-                tmClass: any;
-                journalNumber: string;
-              }) => {
-                const ourTmPromise = fetchOurTm(item.ourTrademarkAppNumbers);
-                const journalTmPromise = fetchJournalTm(
-                  item.ourTrademarkAppNumbers,
-                  item.journalNumber
-                );
+      const journalToDataMapping = new Map<string, Array<string>>();
 
-                const [ourTmAppIdList, journalTm] = await Promise.all([
-                  ourTmPromise,
-                  journalTmPromise
-                ]);
-                return {
-                  applicationNoJournalTM: item.journalAppNumber,
-                  applicationNoOurTM: item.ourTrademarkAppNumbers,
-                  journalTM: journalTm,
-                  ourTM: ourTmAppIdList.filter(Boolean),
-                  class: item.tmClass
-                };
-              }
-            )
-          );
-
-          setMatchingData((prevMappedMap) => {
-            const updatedMappedMap = new Map(prevMappedMap);
-            updatedMappedMap.set(selectedJournal.journalNo, mappedData);
-            return updatedMappedMap;
-          });
-
-          const allOurTM = new Set<string>();
-          mappedData.forEach((data) => {
-            data.ourTM.forEach((ourTMObject: { tmAppliedFor: string }) =>
-              allOurTM.add(ourTMObject.tmAppliedFor)
-            );
-          });
-          setUniqueOurTM((prevTM) => prevTM.union(allOurTM));
-          setIsLoading(false);
-          // return response.json();
-        } catch (error) {
-          console.error('Fetch operation failed:', error);
-          return null;
-        } finally {
-          setIsLoading(false);
+      for (const matchedEntry of matchedEntries) {
+        const journalNumber = matchedEntry.journalNumber;
+        if (!journalToDataMapping.has(journalNumber)) {
+          journalToDataMapping.set(journalNumber, []);
         }
-      })
-    );
+
+        journalToDataMapping.get(journalNumber)?.push(matchedEntry);
+      }
+
+      let fetchOurTmPromises = [];
+      let fetchJournalTmPromises = [];
+
+      journalToDataMapping.forEach((value, key, map) => {
+        let allApplicationNumbers = new Array<string>();
+
+        value.forEach(
+          (matchedEntry) =>
+            (allApplicationNumbers = allApplicationNumbers.concat(
+              matchedEntry.ourTrademarkAppNumbers
+            ))
+        );
+
+        fetchOurTmPromises.push(fetchOurTm(allApplicationNumbers));
+
+        fetchJournalTmPromises.push(fetchJournalTm(allApplicationNumbers, key));
+      });
+
+      const fetchOurTmRes = await Promise.all(fetchOurTmPromises);
+      const fetchJouranlTmRes = await Promise.all(fetchJournalTmPromises);
+
+      console.dir(fetchOurTmRes);
+      console.dir(fetchJouranlTmRes);
+
+      // const mappedData = await Promise.all(
+      //   data.map(
+      //     async (item: {
+      //       ourTrademarkAppNumbers: any[];
+      //       journalAppNumber: string;
+      //       tmClass: any;
+      //       journalNumber: string;
+      //     }) => {
+      //       const ourTmPromise = fetchOurTm(item.ourTrademarkAppNumbers);
+      //       const journalTmPromise = fetchJournalTm(
+      //         item.ourTrademarkAppNumbers,
+      //         item.journalNumber
+      //       );
+
+      //       const [ourTmAppIdList, journalTm] = await Promise.all([
+      //         ourTmPromise,
+      //         journalTmPromise
+      //       ]);
+      //       return {
+      //         applicationNoJournalTM: item.journalAppNumber,
+      //         applicationNoOurTM: item.ourTrademarkAppNumbers,
+      //         journalTM: journalTm,
+      //         ourTM: ourTmAppIdList.filter(Boolean),
+      //         class: item.tmClass
+      //       };
+      //     }
+      //   )
+      // );
+
+      setMatchingData((prevMappedMap) => {
+        const updatedMappedMap = new Map(prevMappedMap);
+        updatedMappedMap.set(selectedJournal.journalNo, mappedData);
+        return updatedMappedMap;
+      });
+
+      const allOurTM = new Set<string>();
+      mappedData.forEach((data) => {
+        data.ourTM.forEach((ourTMObject: { tmAppliedFor: string }) =>
+          allOurTM.add(ourTMObject.tmAppliedFor)
+        );
+      });
+      setUniqueOurTM((prevTM) => prevTM.union(allOurTM));
+      setIsLoading(false);
+      // return response.json();
+    } catch (error) {
+      console.error('Fetch operation failed:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
 
     // const query = selectedJournals.map((item) => item.journalNo).join('&');
     // setIsLoading(true);

@@ -13,14 +13,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useState } from 'react'; // For notification state
+import { signOut } from 'next-auth/react';
 
 // Mock notification data (you can replace it with real data later)
 const notifications = [
-  { id: 1, message: "Status changed to: Formalities Chk Pass" },
-  { id: 2, message: "Status changed to: Marked for examination" },
+  { id: 1, message: 'Status changed to: Formalities Chk Pass' },
+  { id: 2, message: 'Status changed to: Marked for examination' }
 ];
 
-export function User({ user }: { user: any }) { // Expect the user prop
+export function User({ user }: { user: any }) {
+  // Expect the user prop
   const [hasUnread, setHasUnread] = useState(true);
 
   return (
@@ -31,7 +33,9 @@ export function User({ user }: { user: any }) { // Expect the user prop
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
             {/* Notification dot if there are unread notifications */}
-            {hasUnread && <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>}
+            {hasUnread && (
+              <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+            )}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -79,7 +83,7 @@ export function User({ user }: { user: any }) { // Expect the user prop
           <DropdownMenuSeparator /> */}
           {user ? (
             <DropdownMenuItem>
-              <form action="/api/signout" method="post">
+              <form onSubmit={signOut} method="post">
                 <button type="submit" className="flex items-center">
                   <LogOut className="h-4 w-4 mr-2" /> Sign Out
                 </button>
