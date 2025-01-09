@@ -83,7 +83,10 @@ export function User({ user }: { user: any }) {
           <DropdownMenuSeparator /> */}
           {user ? (
             <DropdownMenuItem>
-              <form onSubmit={signOut} method="post">
+              <form
+                onSubmit={async () => await signOut({ callbackUrl: '/' })}
+                method="post"
+              >
                 <button type="submit" className="flex items-center">
                   <LogOut className="h-4 w-4 mr-2" /> Sign Out
                 </button>

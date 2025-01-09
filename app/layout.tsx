@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import './globals.css';
 import { redirect } from 'next/navigation';
+import Provider from './Provider';
 
 export const metadata = {
   title: 'Trademark - SafeTradeApprovals',
@@ -21,7 +22,9 @@ export default function RootLayout({
   }
   return (
     <html lang="en">
-      <body className="flex min-h-screen w-full flex-col">{children}</body>
+      <body className="flex min-h-screen w-full flex-col">
+        <Provider>{children}</Provider>
+      </body>
     </html>
   );
 }

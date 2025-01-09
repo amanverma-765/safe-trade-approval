@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
 import DeleteButton from '@/components/ui/deleteButton';
+import { useSession } from 'next-auth/react';
 
 interface TrademarkEntry {
   applicationNo: string;
@@ -78,47 +79,58 @@ const CompanySelectionComponent = () => {
   const [trademarks, setTrademarks] = useState<TrademarkEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
+  const { data: sessionData, status } = useSession();
 
   const fetchTrademarks = () => {
     setLoading(true);
     const finalUrl = `${url}/get/our_trademarks`;
 
-    fetch(finalUrl)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+    if (status === 'authenticated') {
+      fetch(finalUrl, {
+        headers: {
+          Authorization: `Bearer ${sessionData.user.token}`
         }
-        return response.json();
       })
-      .then((data) => {
-        const mappedTrademarks: TrademarkEntry[] = data.map(
-          (item: {
-            applicationNumber: any;
-            tmAppliedFor: any;
-            tmClass: any;
-            status: any;
-          }) => ({
-            applicationNo: item.applicationNumber,
-            trademark: item.tmAppliedFor,
-            classNo: item.tmClass,
-            status: item.status
-          })
-        );
-        setTrademarks(mappedTrademarks);
-      })
-      .catch((error) => {
-        console.error('There was a problem with the fetch operation:', error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const mappedTrademarks: TrademarkEntry[] = data.map(
+            (item: {
+              applicationNumber: any;
+              tmAppliedFor: any;
+              tmClass: any;
+              status: any;
+            }) => ({
+              applicationNo: item.applicationNumber,
+              trademark: item.tmAppliedFor,
+              classNo: item.tmClass,
+              status: item.status
+            })
+          );
+          setTrademarks(mappedTrademarks);
+        })
+        .catch((error) => {
+          console.error('There was a problem with the fetch operation:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
   };
 
   const handleDelete = (applicationId: string) => {
     setDeleting(true);
     const finalUrl = `${url}/delete/our/application/${applicationId}`;
 
-    fetch(finalUrl)
+    fetch(finalUrl, {
+      headers: {
+        Authorization: `Bearer ${sessionData.user.token}`
+      }
+    })
       .then((response) => {
         if (!response.ok) {
           return response.json().then((errorResponse) => {
@@ -144,9 +156,9 @@ const CompanySelectionComponent = () => {
       return;
     }
 
-    const applicationIds = applicationId.split(',').map(id => id.trim());
-    if (applicationIds.length === 0 || applicationIds.some(id => id === '')) {
-      alert("Please provide valid application IDs separated by commas.");
+    const applicationIds = applicationId.split(',').map((id) => id.trim());
+    if (applicationIds.length === 0 || applicationIds.some((id) => id === '')) {
+      alert('Please provide valid application IDs separated by commas.');
       return;
     }
 
@@ -156,14 +168,16 @@ const CompanySelectionComponent = () => {
     fetch(finalUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData.user.token}`
       },
       body: JSON.stringify(applicationIds)
     })
       .then(async (response) => {
         if (!response.ok) {
           return response.json().then((errorResponse) => {
-            const firstError = errorResponse[0]?.message || "An unknown error occurred.";
+            const firstError =
+              errorResponse[0]?.message || 'An unknown error occurred.';
             alert(firstError);
           });
         }
