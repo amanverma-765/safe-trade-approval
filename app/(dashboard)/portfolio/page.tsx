@@ -128,7 +128,7 @@ const CompanySelectionComponent = () => {
 
     fetch(finalUrl, {
       headers: {
-        Authorization: `Bearer ${sessionData.user.token}`
+        Authorization: `Bearer ${sessionData!.user.token}`
       }
     })
       .then((response) => {
@@ -169,7 +169,7 @@ const CompanySelectionComponent = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionData.user.token}`
+        Authorization: `Bearer ${sessionData!.user.token}`
       },
       body: JSON.stringify(applicationIds)
     })
