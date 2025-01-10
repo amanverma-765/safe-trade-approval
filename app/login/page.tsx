@@ -23,12 +23,6 @@ export default function LoginPage() {
 
     let result;
 
-    if (method === 'github') {
-      result = await signIn('github', {
-        callbackUrl: '/'
-      });
-    }
-
     if (method === 'credentials') {
       result = await signIn('credentials', {
         redirect: false,
@@ -50,9 +44,6 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            This demo uses GitHub and email-password for authentication.
-          </CardDescription>
         </CardHeader>
         <CardFooter>
           {/* Email-password login form */}
@@ -91,17 +82,6 @@ export default function LoginPage() {
               onClick={(e) => handleLogin(e, 'credentials')}
             >
               Sign in
-            </Button>
-
-            {/* Divider */}
-            <div className="mt-4 text-center text-sm text-gray-500">or</div>
-
-            {/* GitHub authentication button */}
-            <Button
-              className="w-full mt-4"
-              onClick={(e) => handleLogin(e, 'github')}
-            >
-              Sign in with GitHub
             </Button>
           </form>
         </CardFooter>
