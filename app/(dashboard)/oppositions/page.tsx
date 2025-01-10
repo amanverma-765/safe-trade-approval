@@ -167,7 +167,7 @@ const useReports = () => {
 
     fetch(`${url}/delete/report/${reportId}`, {
       headers: {
-        Authorization: `Bearer ${sessionData.user.token}`
+        Authorization: `Bearer ${sessionData!.user.token}`
       }
     })
       .then((response) => {
