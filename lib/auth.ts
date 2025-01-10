@@ -40,20 +40,19 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
     })
   ],
   pages: {
-    signIn: '/login'
+    signIn: '/login' // Redirects to your custom login page
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // Assuming user contains a token field from the backend response
-        token.token = user.token; // Set token in JWT object
+        token.token = user.token; // Add token to JWT
       }
       return token;
     },
     async session({ session, token }) {
       session.user = {
         ...session.user,
-        token: token.token as string // Set token in session.user object
+        token: token.token // Add token to session
       };
       return session;
     }

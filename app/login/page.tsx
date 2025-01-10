@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   const router = useRouter();
 
-  async function handleLogin(e: { preventDefault: () => void }, method) {
+  async function handleLogin(e: { preventDefault: () => void }, method: string) {
     e.preventDefault();
 
     let result;
