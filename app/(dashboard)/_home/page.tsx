@@ -196,7 +196,7 @@ function ProductsTable({
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${sessionData.user.token}`
+              Authorization: `Bearer ${sessionData!.user.token}`
             },
             body: JSON.stringify(opposition)
           })
@@ -598,8 +598,6 @@ const HomePage = () => {
           totalJournals={journals.length}
           onPrevPage={prevPage}
           onNextPage={nextPage}
-          sessionData={sessionData}
-          status={status}
         />
       )}
     </div>

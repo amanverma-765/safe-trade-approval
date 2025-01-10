@@ -44,10 +44,17 @@ export const { signIn, signOut, handlers, auth } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
-      return { ...token, ...user };
+      if (user) {
+        // Assuming user contains a token field from the backend response
+        token.token = user.token; // Set token in JWT object
+      }
+      return token;
     },
-    async session({ session, token, user }) {
-      session.user = token as any;
+    async session({ session, token }) {
+      session.user = {
+        ...session.user,
+        token: token.token as string // Set token in session.user object
+      };
       return session;
     }
   }
