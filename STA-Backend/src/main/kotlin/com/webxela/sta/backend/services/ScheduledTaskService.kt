@@ -6,11 +6,15 @@ import com.webxela.sta.backend.repo.JournalTmRepo
 import com.webxela.sta.backend.repo.LatestJournalRepo
 import com.webxela.sta.backend.scraper.LatestJournalScraper
 import com.webxela.sta.backend.scraper.StaScraper
+import com.webxela.sta.backend.utils.Constants.MAX_TRADEMARKS
 import com.webxela.sta.backend.utils.extractNumbersFromPDF
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Sort
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.nio.file.Files
+import java.nio.file.Paths
 import kotlin.time.Duration.Companion.seconds
 
 @Service
@@ -41,14 +45,6 @@ class ScheduledTaskService(
         return try {
             val tableName = "journal_${journalGroup.first().journalNumber}"
 
-            // Early return if table exists
-            if (withContext(Dispatchers.IO) {
-                    journalTmRepo.tableExistsAndNotEmpty(tableName)
-                }) {
-                logger.info("Journal Table $tableName already exists")
-                return ScrapingResult.JournalExists
-            }
-
             // Process the journal data
             val savedFilePathList = journalGroup.map { journal ->
                 System.getProperty("user.home") + "/sta/staFiles/${journal.journalNumber}/${
@@ -60,13 +56,24 @@ class ScheduledTaskService(
             val journalData = staScraper.scrapeTrademarkByList(applicationNumberList)
 
             // Save the data
-            withContext(Dispatchers.IO) {
-                journalTmRepo.addAll(tableName, journalData)
-            }
-            withContext(Dispatchers.IO) {
-                latestJournalRepo.save(journalGroup.first().toJournalEntity())
+            journalData?.let { trademarks ->
+                withContext(Dispatchers.IO) {
+                    journalTmRepo.replaceAll(tableName, trademarks)
+                }
             }
 
+            withContext(Dispatchers.IO) {
+                val journalNumber = journalGroup.first().journalNumber
+                val existingJournal = latestJournalRepo.findByJournalNumber(journalNumber)
+
+                if (existingJournal == null) {
+                    // Save the new journal
+                    latestJournalRepo.save(journalGroup.first().toJournalEntity())
+                } else {
+                    println("Journal with journalNumber $journalNumber already exists.")
+                }
+                runCleanup() // clean all extra unused journals
+            }
             ScrapingResult.Success
         } catch (e: Exception) {
             ScrapingResult.Error(e)
@@ -101,23 +108,13 @@ class ScheduledTaskService(
         }
     }
 
-    @Scheduled(cron = "0 0 12 * * *", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 0 0 * * WED", zone = "Asia/Kolkata")
     fun scheduleLatestJournalScraping() {
         runBlocking {
             try {
                 retryWithExponentialBackoff {
                     // Fetch journals
                     val journals = latestJournalScraper.fetchJournal()
-
-                    // Check if journal already exists
-                    val lastJournalNumber = withContext(Dispatchers.IO) {
-                        latestJournalRepo.findLastJournalNumber()
-                    }
-
-                    if (lastJournalNumber == journals.first().journalNumber) {
-                        logger.info("Journal Already Exists...")
-                        return@retryWithExponentialBackoff
-                    }
 
                     // Process each journal group sequentially
                     val groupedJournals = journals.groupBy { it.journalNumber }.values.map { it.toList() }
@@ -144,4 +141,51 @@ class ScheduledTaskService(
     fun runTaskManually() {
         scheduleLatestJournalScraping()
     }
+
+    private fun runCleanup() {
+        try {
+            // Delete Extra Journals from listing
+            val allJournals = latestJournalRepo.findAll(Sort.by(Sort.Direction.DESC, "journalNumber"))
+            if (allJournals.size > MAX_TRADEMARKS) {
+                val journalsToDelete = allJournals.drop(MAX_TRADEMARKS) // Keep the top, delete the rest
+                latestJournalRepo.deleteAll(journalsToDelete)
+
+                val journalNumbersToDelete = journalsToDelete.map { it.journalNumber }
+
+                // Delete Extra Journals PDF from storage
+                journalNumbersToDelete.forEach { journalNumber ->
+                    val pdfPath = Paths.get(System.getProperty("user.home"), "sta", "staFiles", journalNumber.toString())
+                    try {
+                        if (Files.exists(pdfPath)) {
+                            Files.walk(pdfPath)
+                                .sorted(Comparator.reverseOrder()) // Reverse order to delete contents before the directory
+                                .forEach(Files::delete)
+                            println("Deleted folder: $pdfPath")
+                        } else {
+                            println("Folder not found: $pdfPath")
+                        }
+                    } catch (ex: Exception) {
+                        println("Error deleting folder: $pdfPath")
+                        ex.printStackTrace()
+                    }
+                }
+
+                // Delete Extra Journal Tables
+                try {
+                    journalNumbersToDelete.forEach { journalNumber ->
+                        val tableName = "journal_$journalNumber"
+                        journalTmRepo.deleteTable(tableName)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            logger.info("Finished cleanup...")
+        } catch (e: Exception) {
+            logger.error("Fatal error in cleanup task", e)
+            e.printStackTrace()
+        }
+    }
+
 }

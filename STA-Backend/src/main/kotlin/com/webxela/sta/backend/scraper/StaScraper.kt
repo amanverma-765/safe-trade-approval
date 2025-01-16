@@ -4,11 +4,13 @@ import com.webxela.sta.backend.config.KtorClientConfig
 import com.webxela.sta.backend.domain.model.Trademark
 import com.webxela.sta.backend.scraper.parser.TrademarkParser
 import com.webxela.sta.backend.utils.Constants.CAPTCHA_URL
+import com.webxela.sta.backend.utils.Constants.MAX_THREADS
 import com.webxela.sta.backend.utils.Constants.TRADEMARK_URL
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
@@ -69,9 +71,8 @@ class StaScraper(
     // Scrape trademarks by journal file path
     suspend fun scrapeTrademarkByList(
         applicationNumberList: List<String>,
-        threadCount: Int = 50
-    ): List<Trademark> {
-
+        threadCount: Int = MAX_THREADS
+    ): List<Trademark>? {
         val tData = mutableListOf<Trademark>()
         val chunks: List<List<String>> = if (applicationNumberList.size <= threadCount) {
             listOf(applicationNumberList)
@@ -82,25 +83,33 @@ class StaScraper(
             chunks.size.coerceAtMost(threadCount)
         ).asCoroutineDispatcher()
 
-        runBlocking {
-            chunks.forEach { chunk ->
-                launch(threadPool) {
-                    async {
+        return try {
+            runBlocking {
+                chunks.map { chunk ->
+                    async(threadPool) {
                         val httpClient = httpClientConfig.createHttpClient()
-                        val captcha = getCaptcha(httpClient)  // Get new CAPTCHA for each chunk/request
-                        chunk.forEach { number ->
-                            val trademark = scrapeTrademark(httpClient, number, captcha)
-                            trademark?.let {
-                                tData.add(it)
+                        try {
+                            val captcha = getCaptcha(httpClient)  // Get new CAPTCHA for each chunk/request
+                            chunk.mapNotNull { number ->
+                                scrapeTrademark(httpClient, number, captcha)
                             }
+                        } finally {
+                            httpClient.close()
                         }
-                        httpClient.close()
-                    }.await()
+                    }
+                }.awaitAll().flatten().let {
+                    tData.addAll(it)
                 }
             }
+            println("All ${tData.size} trademarks scraped")
+            tData // Return collected data only if everything succeeds
+        } catch (e: Exception) {
+            println("Error during scraping: ${e.message}")
+            null // Return null if any error occurs
+        } finally {
+            threadPool.close()
         }
-        println("All ${tData.size} trademarks scraped")
-        return tData
     }
+
 
 }

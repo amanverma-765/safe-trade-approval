@@ -12,12 +12,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement
 @EnableTransactionManagement
 class StaBackendApplication
 
-//fun main(args: Array<String>) {
-//	SpringApplicationBuilder(StaBackendApplication::class.java)
-//		.initializers(DotEnvInitializer())
-//		.run(*args)
-//}
-
 fun main(args: Array<String>) {
 	runApplication<StaBackendApplication>(*args)
 }

@@ -41,24 +41,39 @@ class TrademarkService(
 
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
 
-    suspend fun scrapeTrademark(appId: String, isOurTrademark: Boolean): Trademark {
+    suspend fun scrapeTrademark(
+        appId: String,
+        isOurTrademark: Boolean = false,
+        journalNumber: String? = null
+    ): Trademark? {
         try {
             require(appId.length <= 8) {
                 logger.error("Application number $appId is too long")
                 "Application Id is too long"
             }
             return withContext(Dispatchers.IO) {
-                val trademark = (if (isOurTrademark) {
-                    ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
-                } else {
-                    journalTmRepo.findInAllTmEverywhere(appId)
-                }) ?: run {
-                    val scrapedData = staScraper.scrapeByAppId(appId)
-                        ?: throw NoSuchElementException("No trademark found for appId: $appId after scraping")
-                    if (isOurTrademark) {
-                        ourTrademarkRepo.save(scrapedData.toOurTrademarkEntity())
+                val trademark = when {
+                    isOurTrademark -> {
+                        // Fetch from our trademark repo if it's our trademark
+                        ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
                     }
-                    scrapedData
+                    else -> {
+                        // Fetch from journalTmRepo only if it is not our trademark
+                        journalNumber?.let {
+                            journalTmRepo.findByApplicationNumber(it, appId).getOrNull(0)
+                        }
+                    }
+                } ?: run {
+                    // If no trademark found, scrape it only if it's our trademark
+                    if (isOurTrademark) {
+                        val scrapedData = staScraper.scrapeByAppId(appId)
+                            ?: throw NoSuchElementException("No trademark found for appId: $appId after scraping")
+                        ourTrademarkRepo.save(scrapedData.toOurTrademarkEntity())
+                        scrapedData
+                    } else {
+                        // Return null if it's not our trademark and nothing was found in the database
+                        null
+                    }
                 }
                 trademark
             }
@@ -68,17 +83,15 @@ class TrademarkService(
         }
     }
 
+
     suspend fun scrapeOurTmByExcel(excelFile: FilePart) = coroutineScope {
         try {
-            // Step 1: Extract trademark numbers from the Excel file
-            val tmNumberList = extractNumbersFromExcel(excelFile)
 
-            // Step 2: Query only existing application numbers
+            val tmNumberList = extractNumbersFromExcel(excelFile)
             val existingAppNumbers = withContext(Dispatchers.IO) {
                 ourTrademarkRepo.findAllApplicationNumbers() // Assumes a custom query method to get only application numbers
             }.toSet()
 
-            // Step 3: Filter out trademarks that already exist
             val newTmNumbers = tmNumberList.filterNot { it in existingAppNumbers }
 
             if (newTmNumbers.isEmpty()) {
@@ -87,26 +100,21 @@ class TrademarkService(
             }
 
             logger.info("Starting to scrape ${newTmNumbers.size} new trademarks")
-
-            // Step 4: Scrape new trademarks
             val trademarks = staScraper.scrapeTrademarkByList(newTmNumbers)
 
-            // Step 5: Save each trademark individually to ignore duplicates
             withContext(Dispatchers.IO) {
-                trademarks.forEach { trademark ->
+                trademarks?.forEach { trademark ->
                     try {
                         ourTrademarkRepo.save(trademark.toOurTrademarkEntity())
                     } catch (ex: DataIntegrityViolationException) {
-                        // Log the duplicate but continue processing the rest
-                        logger.warn("Duplicate entry ignored for application number: ${trademark.applicationNumber}")
+                        logger.warn("Duplicate entry ignored for application number: ${trademark.applicationNumber}", ex)
                     } catch (ex: Exception) {
-                        // Log any other unexpected errors without stopping the process
                         logger.error("Unexpected error while saving trademark ${trademark.applicationNumber}", ex)
                     }
                 }
             }
 
-            logger.info("Successfully processed ${trademarks.size} new trademarks")
+            logger.info("Successfully processed ${trademarks?.size} new trademarks")
         } catch (ex: Exception) {
             logger.error("Error processing trademarks from Excel: ", ex)
             throw ex
@@ -134,13 +142,14 @@ class TrademarkService(
         val reportList = mutableListOf<ByteArray>()
 
         val journal = withContext(Dispatchers.IO) {
-            latestJournalRepo.findByJournalNumber(requestData.journalNumber).toJournal()
-        }
+            latestJournalRepo.findByJournalNumber(requestData.journalNumber)?.toJournal()
+        } ?: throw Exception("Invalid journal number")
+
         val journalTm = withContext(Dispatchers.IO) {
             journalTmRepo.findByApplicationNumber(
                 journalNumber = requestData.journalNumber,
                 applicationNumber = requestData.journalAppId
-            )
+            ).getOrNull(0)
         }
 
         val commonReplacements = mapOf(

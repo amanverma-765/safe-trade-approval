@@ -14,7 +14,9 @@ import org.springframework.security.web.server.context.WebSessionServerSecurityC
 
 @Configuration
 @EnableWebFluxSecurity
-class SecurityConfig {
+class SecurityConfig(
+    private val corsConfig: CorsConfig
+) {
     private val logger = LoggerFactory.getLogger(SecurityConfig::class.java)
 
     @Bean
@@ -37,12 +39,14 @@ class SecurityConfig {
         logger.info("Configuring SecurityWebFilterChain")
         return http
             .csrf { it.disable() }
-            .cors { it.disable() }
+            .cors { it.configurationSource(corsConfig.corsConfigurationSource()) }
             .authorizeExchange { exchanges ->
                 exchanges
                     .pathMatchers(
                         "/api/v1/sta/auth/**",
-                        "/api/v1/sta/docs"
+                        "/api/v1/sta/docs",
+                        "/api/v1/sta/**",
+                        "**"
                     ).permitAll()
                     .anyExchange().authenticated()
             }

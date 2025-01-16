@@ -1,9 +1,21 @@
 package com.webxela.sta.backend.domain.model
 
 data class MatchingTrademark(
-    val matchResultId: Long? = null,
-    val journalAppNumber: String,
-    val ourTrademarkAppNumbers: List<String> = listOf(),
+    val journalNumber: String,
     val tmClass: String,
-    val journalNumber: String
-)
+    val journalTrademark: JournalTmDataMini,
+    val ourTrademarks: List<OurTmDataMini>,
+) {
+    data class OurTmDataMini(
+        val tmApplicationNumber: String,
+        val tmAppliedFor: String,
+        val tmClass: String,
+        val matchedSubstrings: List<String>
+    )
+
+    data class JournalTmDataMini(
+        val tmApplicationNumber: String,
+        val tmAppliedFor: String,
+        val tmClass: String,
+    )
+}

@@ -122,13 +122,22 @@ suspend fun extractNumbersFromExcel(file: FilePart): List<String> {
 
 fun extractNumbersFromPDF(savedFilePathList: List<String>): List<String> {
     val numbers = mutableListOf<String>()
+    val classPattern = Regex("Class \\d+") // Pattern to match "Class {num}" anywhere on the page
+
     savedFilePathList.forEach { path ->
         Loader.loadPDF(File(path)).use { document ->
             val pdfStripper = PDFTextStripper()
-            val text = pdfStripper.getText(document)
-            val regex = "\\d{7}".toRegex()
-            val extractedNumbers = regex.findAll(text).map { it.value }.toList()
-            numbers.addAll(extractedNumbers)
+            for (page in 1..document.numberOfPages) {
+                pdfStripper.startPage = page
+                pdfStripper.endPage = page
+
+                val text = pdfStripper.getText(document).trim()
+                if (classPattern.containsMatchIn(text)) { // Check if "Class {num}" is present
+                    val regex = "\\d{7}".toRegex()
+                    val extractedNumbers = regex.findAll(text).map { it.value }.toList()
+                    numbers.addAll(extractedNumbers)
+                }
+            }
         }
     }
     return numbers

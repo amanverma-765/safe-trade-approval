@@ -38,53 +38,53 @@ class MatchingTrademarkRepo {
         }
     }
 
-    @Transactional
-    fun addAll(tableName: String, matchingTrademarks: List<MatchingTrademark>) {
-        try {
-            createTableIfNotExists(tableName)
-            val baseQuery =
-                "INSERT INTO $tableName (journal_app_number, our_trademark_app_numbers, tm_class, journal_number) VALUES (:journal_app_number, :our_trademark_app_numbers, :tm_class, :journal_number)"
+//    @Transactional
+//    fun addAll(tableName: String, matchingTrademarks: List<MatchingTrademark>) {
+//        try {
+//            createTableIfNotExists(tableName)
+//            val baseQuery =
+//                "INSERT INTO $tableName (journal_app_number, our_trademark_app_numbers, tm_class, journal_number) VALUES (:journal_app_number, :our_trademark_app_numbers, :tm_class, :journal_number)"
+//
+//            matchingTrademarks.forEach { trademark ->
+//                val query = entityManager.createNativeQuery(baseQuery)
+//                    .setParameter("journal_app_number", trademark.journalAppNumber)
+//                    .setParameter("our_trademark_app_numbers", trademark.ourTrademarkAppNumbers.joinToString(","))
+//                    .setParameter("tm_class", trademark.tmClass)
+//                    .setParameter("journal_number", trademark.journalNumber)
+//                query.executeUpdate()
+//            }
+//        } catch (ex: Exception) {
+//            logger.error("Error while inserting data into dynamic database", ex)
+//            throw ex
+//        }
+//    }
 
-            matchingTrademarks.forEach { trademark ->
-                val query = entityManager.createNativeQuery(baseQuery)
-                    .setParameter("journal_app_number", trademark.journalAppNumber)
-                    .setParameter("our_trademark_app_numbers", trademark.ourTrademarkAppNumbers.joinToString(","))
-                    .setParameter("tm_class", trademark.tmClass)
-                    .setParameter("journal_number", trademark.journalNumber)
-                query.executeUpdate()
-            }
-        } catch (ex: Exception) {
-            logger.error("Error while inserting data into dynamic database", ex)
-            throw ex
-        }
-    }
 
-
-    @Transactional
-    fun findAll(tableName: String): List<MatchingTrademark> {
-        try {
-            if (!tableExists(tableName)) {
-                logger.info("Table $tableName does not exist.")
-                return emptyList() // Or handle it as per your logic.
-            }
-            val query =
-                entityManager.createNativeQuery("SELECT match_result_id, journal_app_number, our_trademark_app_numbers, tm_class, journal_number FROM $tableName")
-            val results = query.resultList
-            return results.map {
-                val row = it as Array<*>
-                MatchingTrademark(
-                    matchResultId = (row[0] as Number).toLong(),
-                    journalAppNumber = row[1] as String,
-                    ourTrademarkAppNumbers = (row[2] as String).split(","),
-                    tmClass = row[3] as String,
-                    journalNumber = row[4] as String
-                )
-            }
-        } catch (ex: Exception) {
-            logger.error("Error while fetching data from dynamic table $tableName", ex)
-            throw ex
-        }
-    }
+//    @Transactional
+//    fun findAll(tableName: String): List<MatchingTrademark> {
+//        try {
+//            if (!tableExists(tableName)) {
+//                logger.info("Table $tableName does not exist.")
+//                return emptyList() // Or handle it as per your logic.
+//            }
+//            val query =
+//                entityManager.createNativeQuery("SELECT match_result_id, journal_app_number, our_trademark_app_numbers, tm_class, journal_number FROM $tableName")
+//            val results = query.resultList
+//            return results.map {
+//                val row = it as Array<*>
+//                MatchingTrademark(
+//                    matchResultId = (row[0] as Number).toLong(),
+//                    journalAppNumber = row[1] as String,
+//                    ourTrademarkAppNumbers = (row[2] as String).split(","),
+//                    tmClass = row[3] as String,
+//                    journalNumber = row[4] as String
+//                )
+//            }
+//        } catch (ex: Exception) {
+//            logger.error("Error while fetching data from dynamic table $tableName", ex)
+//            throw ex
+//        }
+//    }
 
     @Transactional
     fun deleteAll(tableName: String) {
@@ -122,30 +122,30 @@ class MatchingTrademarkRepo {
         }
     }
 
-    @Transactional
-    fun replaceAll(tableName: String, matchingTrademarks: List<MatchingTrademark>) {
-        try {
-            createTableIfNotExists(tableName)
-
-            // First, delete all the existing records in the table
-            deleteAll(tableName)
-
-            // Then, insert the new records
-            val baseQuery =
-                "INSERT INTO $tableName (journal_app_number, our_trademark_app_numbers, tm_class, journal_number) VALUES (:journal_app_number, :our_trademark_app_numbers, :tm_class, :journal_number)"
-
-            matchingTrademarks.forEach { trademark ->
-                val query = entityManager.createNativeQuery(baseQuery)
-                    .setParameter("journal_app_number", trademark.journalAppNumber)
-                    .setParameter("our_trademark_app_numbers", trademark.ourTrademarkAppNumbers.joinToString(","))
-                    .setParameter("tm_class", trademark.tmClass)
-                    .setParameter("journal_number", trademark.journalNumber)
-                query.executeUpdate()
-            }
-        } catch (ex: Exception) {
-            logger.error("Error while replacing data in table $tableName", ex)
-            throw ex
-        }
-    }
+//    @Transactional
+//    fun replaceAll(tableName: String, matchingTrademarks: List<MatchingTrademark>) {
+//        try {
+//            createTableIfNotExists(tableName)
+//
+//            // First, delete all the existing records in the table
+//            deleteAll(tableName)
+//
+//            // Then, insert the new records
+//            val baseQuery =
+//                "INSERT INTO $tableName (journal_app_number, our_trademark_app_numbers, tm_class, journal_number) VALUES (:journal_app_number, :our_trademark_app_numbers, :tm_class, :journal_number)"
+//
+//            matchingTrademarks.forEach { trademark ->
+//                val query = entityManager.createNativeQuery(baseQuery)
+//                    .setParameter("journal_app_number", trademark.journalAppNumber)
+//                    .setParameter("our_trademark_app_numbers", trademark.ourTrademarkAppNumbers.joinToString(","))
+//                    .setParameter("tm_class", trademark.tmClass)
+//                    .setParameter("journal_number", trademark.journalNumber)
+//                query.executeUpdate()
+//            }
+//        } catch (ex: Exception) {
+//            logger.error("Error while replacing data in table $tableName", ex)
+//            throw ex
+//        }
+//    }
 
 }

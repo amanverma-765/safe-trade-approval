@@ -1,6 +1,7 @@
 package com.webxela.sta.backend.controller
 
 import com.webxela.sta.backend.domain.model.ErrorResponse
+import com.webxela.sta.backend.domain.model.JournalRequest
 import com.webxela.sta.backend.domain.model.ReportGenRequest
 import com.webxela.sta.backend.services.ScheduledTaskService
 import com.webxela.sta.backend.services.TrademarkMatchingService
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/sta")
-@CrossOrigin(origins = ["http://localhost:3000", "http://52.172.161.167:3000"])
 class TrademarkController(
     private val trademarkService: TrademarkService,
     private val trademarkMatchingService: TrademarkMatchingService,
@@ -43,29 +43,36 @@ class TrademarkController(
         }
     }
 
-    @GetMapping("/scrape/journal/application/{applicationId}")
-    suspend fun scrapeJournalTmByApplicationId(
-        @PathVariable applicationId: String,
-    ): ResponseEntity<Any> {
-        try {
-            val trademark = trademarkService.scrapeTrademark(applicationId, false)
-            return ResponseEntity.ok(trademark)
+    @PostMapping("scrape/journal/application")
+    suspend fun scrapeJournalTmByApplicationIds(
+        @RequestBody request: JournalRequest
+    ): ResponseEntity<Any?> {
+        return try {
+            val trademarks = request.applicationIds.mapNotNull { appId ->
+                trademarkService.scrapeTrademark(
+                    appId = appId,
+                    journalNumber = request.journalNumber
+                )
+            }
+            ResponseEntity.ok(trademarks)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
         }
     }
 
-    @GetMapping("/scrape/our/application/{applicationId}")
-    suspend fun scrapeOurTmByApplicationId(
-        @PathVariable applicationId: String
-    ): ResponseEntity<Any> {
-        try {
-            val trademark = trademarkService.scrapeTrademark(applicationId, true)
-            return ResponseEntity.ok(trademark)
+    @PostMapping("scrape/our/application")
+    suspend fun scrapeOurTmByApplicationIds(
+        @RequestBody applicationIds: List<String>
+    ): ResponseEntity<List<Any?>> {
+        return try {
+            val trademarks = applicationIds.map { appId ->
+                trademarkService.scrapeTrademark(appId, true)
+            }
+            ResponseEntity.ok(trademarks)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
         }
     }
 
@@ -89,13 +96,12 @@ class TrademarkController(
     }
 
 
-    @GetMapping("/match_trademarks/{journalNumbers}")
+    @GetMapping("/match_trademarks/{journalNumber}")
     suspend fun matchTheTrademark(
-        @PathVariable journalNumbers: String
+        @PathVariable journalNumber: String
     ): ResponseEntity<List<Any>> {
         try {
-            val journalList = journalNumbers.split("&")
-            val matchingResult = trademarkMatchingService.findMatchingTrademarks(journalList)
+            val matchingResult = trademarkMatchingService.findMatchingTrademarks(journalNumber)
             return ResponseEntity.ok(matchingResult)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
@@ -103,19 +109,19 @@ class TrademarkController(
         }
     }
 
-    @GetMapping("/get/matching_result/{journalNumbers}")
-    suspend fun getMatchingResult(
-        @PathVariable journalNumbers: String
-    ): ResponseEntity<List<Any>> {
-        try {
-            val journalList = journalNumbers.split("&")
-            val matchingResult = trademarkMatchingService.getMatchingResult(journalList)
-            return ResponseEntity.ok(matchingResult)
-        } catch (ex: Exception) {
-            val error = ErrorResponse(message = ex.message)
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
-        }
-    }
+//    @GetMapping("/get/matching_result/{journalNumbers}")
+//    suspend fun getMatchingResult(
+//        @PathVariable journalNumbers: String
+//    ): ResponseEntity<List<Any>> {
+//        try {
+//            val journalList = journalNumbers.split("&")
+//            val matchingResult = trademarkMatchingService.getMatchingResult(journalList)
+//            return ResponseEntity.ok(matchingResult)
+//        } catch (ex: Exception) {
+//            val error = ErrorResponse(message = ex.message)
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))
+//        }
+//    }
 
     @GetMapping("/start_schedule_task")
     suspend fun startScheduleTask(): ResponseEntity<Any> {

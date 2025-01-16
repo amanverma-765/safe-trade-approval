@@ -90,6 +90,58 @@ class JournalTmRepo {
     }
 
     @Transactional
+    fun replaceAll(tableName: String, trademarks: List<Trademark>) {
+        try {
+            // Ensure the table exists
+            createTableIfNotExists(tableName)
+
+            // Delete all existing records from the table
+            val deleteQuery = "DELETE FROM $tableName"
+            entityManager.createNativeQuery(deleteQuery).executeUpdate()
+
+            // Prepare the base query for insertion
+            val baseQuery =
+                """INSERT INTO $tableName (status, application_number, tm_class, date_of_application, appropriate_office, 
+               state, country, filing_mode, tm_applied_for, tm_category, tm_type, user_details, cert_detail, valid_up_to, 
+               proprietor_name, proprietor_address, email_id, agent_name, agent_address, publication_details) 
+               VALUES (:status, :application_number, :tm_class, :date_of_application, :appropriate_office, :state, 
+               :country, :filing_mode, :tm_applied_for, :tm_category, :tm_type, :user_details, :cert_detail, :valid_up_to, 
+               :proprietor_name, :proprietor_address, :email_id, :agent_name, :agent_address, :publication_details)"""
+
+            // Insert the new trademarks
+            trademarks.forEach { trademark ->
+                val query = entityManager.createNativeQuery(baseQuery)
+                    .setParameter("status", trademark.status)
+                    .setParameter("application_number", trademark.applicationNumber)
+                    .setParameter("tm_class", trademark.tmClass)
+                    .setParameter("date_of_application", trademark.dateOfApplication)
+                    .setParameter("appropriate_office", trademark.appropriateOffice)
+                    .setParameter("state", trademark.state)
+                    .setParameter("country", trademark.country)
+                    .setParameter("filing_mode", trademark.filingMode)
+                    .setParameter("tm_applied_for", trademark.tmAppliedFor)
+                    .setParameter("tm_category", trademark.tmCategory)
+                    .setParameter("tm_type", trademark.tmType)
+                    .setParameter("user_details", trademark.userDetails)
+                    .setParameter("cert_detail", trademark.certDetail)
+                    .setParameter("valid_up_to", trademark.validUpTo)
+                    .setParameter("proprietor_name", trademark.proprietorName)
+                    .setParameter("proprietor_address", trademark.proprietorAddress)
+                    .setParameter("email_id", trademark.emailId)
+                    .setParameter("agent_name", trademark.agentName)
+                    .setParameter("agent_address", trademark.agentAddress)
+                    .setParameter("publication_details", trademark.publicationDetails)
+
+                query.executeUpdate()
+            }
+        } catch (ex: Exception) {
+            logger.error("Error while replacing data in the dynamic database", ex)
+            throw ex
+        }
+    }
+
+
+    @Transactional
     fun findAll(tableName: String): List<Trademark> {
         return try {
             val query = """
@@ -105,21 +157,22 @@ class JournalTmRepo {
     }
 
     @Transactional
-    fun findByApplicationNumber(journalNumber: String, applicationNumber: String): Trademark? {
+    fun findByApplicationNumber(journalNumber: String, applicationNumber: String): List<Trademark> {
         val tableName = "journal_$journalNumber"
         return try {
             val query = """
             SELECT * FROM $tableName WHERE application_number = :applicationNumber
-            """.trimIndent()
+        """.trimIndent()
 
             entityManager.createNativeQuery(query, Trademark::class.java)
                 .setParameter("applicationNumber", applicationNumber)
-                .singleResult as? Trademark
+                .resultList as List<Trademark>
         } catch (ex: Exception) {
-            logger.error("Error fetching record by application number $applicationNumber from $tableName", ex)
-            null
+            logger.error("Error fetching records by application number $applicationNumber from $tableName", ex)
+            emptyList()
         }
     }
+
 
     @Transactional
     fun deleteByApplicationNumber(tableName: String, applicationNumber: String) {
@@ -138,75 +191,17 @@ class JournalTmRepo {
     }
 
     @Transactional
-    fun findInAllTmEverywhere(applicationNumber: String): Trademark? {
+    fun deleteTable(tableName: String) {
         try {
-            val tableNamesQuery = """
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_name LIKE 'journal_%'
-        """.trimIndent()
+            val query = """
+            DROP TABLE IF EXISTS $tableName
+            """.trimIndent()
 
-            val tableNames = entityManager.createNativeQuery(tableNamesQuery).resultList as List<String>
-
-            for (tableName in tableNames) {
-                try {
-                    val query = """
-                    SELECT * FROM $tableName WHERE application_number = :applicationNumber
-                """.trimIndent()
-
-                    val result = entityManager.createNativeQuery(query, Trademark::class.java)
-                        .setParameter("applicationNumber", applicationNumber)
-                        .singleResult as? Trademark
-
-                    if (result != null) {
-                        logger.info("Record found in table $tableName")
-                        return result
-                    }
-                } catch (ex: Exception) {
-                    logger.error("Error fetching record from $tableName", ex)
-                }
-            }
-            logger.info("No record found for application number $applicationNumber in any journal tables.")
-            return null
-
+            entityManager.createNativeQuery(query).executeUpdate()
         } catch (ex: Exception) {
-            logger.error("Error finding application number $applicationNumber in all journal tables", ex)
+            logger.error("Error deleting table $tableName", ex)
             throw ex
         }
     }
-
-    @Transactional
-    fun tableExistsAndNotEmpty(tableName: String): Boolean {
-        return try {
-            // Check if table exists
-            val existsQuery = """
-            SELECT EXISTS (
-                SELECT 1 
-                FROM information_schema.tables 
-                WHERE table_name = :tableName
-            )
-        """.trimIndent()
-
-            val exists = entityManager.createNativeQuery(existsQuery)
-                .setParameter("tableName", tableName)
-                .singleResult as Boolean
-
-            if (!exists) {
-                logger.info("Table $tableName does not exist.")
-                false
-            } else {
-                // Check if table has any rows
-                val countQuery = "SELECT COUNT(*) FROM $tableName"
-                val count = (entityManager.createNativeQuery(countQuery).singleResult as Number).toInt()
-                val isNotEmpty = count > 0
-                logger.info("Table $tableName exists and is${if (isNotEmpty) " not" else ""} empty.")
-                isNotEmpty
-            }
-        } catch (ex: Exception) {
-            logger.error("Error checking if table $tableName exists or is empty", ex)
-            throw ex
-        }
-    }
-
 
 }

@@ -3,6 +3,7 @@ package com.webxela.sta.backend.scraper
 import com.webxela.sta.backend.config.KtorClientConfig
 import com.webxela.sta.backend.domain.model.LatestJournal
 import com.webxela.sta.backend.utils.Constants.JOURNAL_VIEW_URL
+import com.webxela.sta.backend.utils.Constants.MAX_TRADEMARKS
 import com.webxela.sta.backend.utils.Constants.TM_LISTING_PAGE
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
@@ -32,7 +33,7 @@ class LatestJournalScraper(
             // Fetch the TM listing page
             val response = httpClient.get(TM_LISTING_PAGE)
             val document = Jsoup.parse(response.bodyAsText().trimIndent())
-            val allRows = document.select("table#Journal tbody tr").take(15)
+            val allRows = document.select("table#Journal tbody tr").take(MAX_TRADEMARKS)
             // Extract data from the row
             allRows.forEach { row ->
                 val cells = row.getElementsByTag("td")
