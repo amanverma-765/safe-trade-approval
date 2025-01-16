@@ -1,6 +1,5 @@
 'use client';
-import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,37 +9,14 @@ import {
   CardTitle
 } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'contexts/SessionContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const router = useRouter();
-
-  async function handleLogin(
-    e: { preventDefault: () => void },
-    method: string
-  ) {
-    e.preventDefault();
-
-    let result;
-
-    if (method === 'credentials') {
-      result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password
-      });
-    }
-
-    if (result?.error) {
-      setError('Invalid email or password');
-    } else {
-      setError('');
-      router.push('/');
-    }
-  }
+  const { signIn } = useSession();
 
   return (
     <div className="min-h-screen flex justify-center items-start md:items-center p-8">
@@ -52,9 +28,7 @@ export default function LoginPage() {
           {/* Email-password login form */}
           <form
             className="w-full space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
+            onSubmit={(e) => signIn(e, email, password)}
           >
             <div>
               <label className="block text-sm font-medium">Email</label>
@@ -79,11 +53,7 @@ export default function LoginPage() {
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button
-              type="submit"
-              className="w-full"
-              onClick={(e) => handleLogin(e, 'credentials')}
-            >
+            <Button type="submit" className="w-full">
               Sign in
             </Button>
           </form>

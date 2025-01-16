@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'contexts/SessionContext';
 
 interface PDFReport {
   title: string;
@@ -18,7 +18,7 @@ const url = process.env.NEXT_PUBLIC_API_URL;
 
 const usePdfHandler = () => {
   const [isPdfProcessing, setIsPdfProcessing] = useState(false);
-  const { data: sessionData, status } = useSession();
+  const { token } = useSession();
 
   const getPdfViewerHTML = (pdfUrl: string): string => `
     <!DOCTYPE html>
@@ -79,7 +79,7 @@ const usePdfHandler = () => {
     if (status === 'authenticated') {
       fetch(fileUrl, {
         headers: {
-          Authorization: `Bearer ${sessionData.user.token}`
+          Authorization: `Bearer ${token}`
         }
       })
         .then((response) => {
@@ -116,7 +116,7 @@ const useReports = () => {
   const [reports, setReports] = useState<PDFReport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { data: sessionData, status } = useSession();
+  const { token } = useSession();
 
   const fetchReports = () => {
     setIsLoading(true);
@@ -124,7 +124,7 @@ const useReports = () => {
     if (status === 'authenticated') {
       fetch(`${url}/get/generated_reports`, {
         headers: {
-          Authorization: `Bearer ${sessionData.user.token}`
+          Authorization: `Bearer ${token}`
         }
       })
         .then((response) => {
@@ -167,7 +167,7 @@ const useReports = () => {
 
     fetch(`${url}/delete/report/${reportId}`, {
       headers: {
-        Authorization: `Bearer ${sessionData!.user.token}`
+        Authorization: `Bearer ${token}`
       }
     })
       .then((response) => {
@@ -251,7 +251,6 @@ const ReportCard: React.FC<{
   </div>
 );
 
-
 const ReportViewer = () => {
   const { reports, isLoading, isDeleting, handleDelete } = useReports();
   const { handlePdf, isPdfProcessing } = usePdfHandler();
@@ -266,13 +265,17 @@ const ReportViewer = () => {
         <div className="flex flex-col w-full h-full bg-gray-100">
           <Card className="w-full">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-left">Reports</CardTitle>
+              <CardTitle className="text-2xl font-bold text-left">
+                Reports
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {reports.length === 0 ? (
                 <div className="text-center text-gray-600 py-8">
                   <p className="text-xl">No opposition reports available</p>
-                  <p className="text-sm">Once reports are generated, they will appear here.</p>
+                  <p className="text-sm">
+                    Once reports are generated, they will appear here.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">

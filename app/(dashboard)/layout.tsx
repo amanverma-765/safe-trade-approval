@@ -1,3 +1,4 @@
+'use client';
 import Link from 'next/link';
 import {
   Home,
@@ -29,22 +30,16 @@ import { User } from './user';
 import Providers from './providers';
 import { NavItem } from './nav-item';
 import { SearchInput } from './search';
-import { auth } from '@/lib/auth'; // Import your auth logic
-import Image from 'next/image';
-import { redirect } from 'next/navigation';
 
-export default async function DashboardLayout({
+import Image from 'next/image';
+import { useSession } from 'contexts/SessionContext';
+
+export default function DashboardLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth(); // Fetch user session
-
-  if (!session) {
-    redirect('/login');
-  }
-
-  const user = session?.user; // Extract user data
+  const { token } = useSession();
 
   return (
     <Providers>
@@ -55,7 +50,7 @@ export default async function DashboardLayout({
             <MobileNav />
             <DashboardBreadcrumb />
             <SearchInput />
-            <User user={user} />{' '}
+            <User user={{ token }} />{' '}
             {/* Pass the user data to the User component */}
           </header>
           <main className="grid flex-1 items-start gap-2 p-4 sm:px-6 sm:py-0 md:gap-4 bg-muted/40">

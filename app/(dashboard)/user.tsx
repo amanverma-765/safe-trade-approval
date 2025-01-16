@@ -1,4 +1,4 @@
-"use client"; // Client component
+'use client'; // Client component
 
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { useState } from 'react'; // For notification state
-import { signOut } from 'next-auth/react';
+import { useSession } from 'contexts/SessionContext';
 
 // Mock notification data (you can replace it with real data later)
 const notifications = [
@@ -24,6 +24,7 @@ const notifications = [
 export function User({ user }: { user: any }) {
   // Expect the user prop
   const [hasUnread, setHasUnread] = useState(true);
+  const { signOut } = useSession();
 
   return (
     <div className="flex items-center gap-4">
@@ -83,10 +84,7 @@ export function User({ user }: { user: any }) {
           <DropdownMenuSeparator /> */}
           {user ? (
             <DropdownMenuItem>
-              <form
-                onSubmit={async () => await signOut({ callbackUrl: '/' })}
-                method="post"
-              >
+              <form onSubmit={signOut} method="post">
                 <button type="submit" className="flex items-center">
                   <LogOut className="h-4 w-4 mr-2" /> Sign Out
                 </button>

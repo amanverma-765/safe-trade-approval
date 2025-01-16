@@ -16,11 +16,14 @@
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "autoprefixer": "^10.4.19",
+    "axios": "^1.7.9",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cookie": "^1.0.2",
+    "js-cookie": "^3.0.5",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.400.0",
     "next": "15.0.0-canary.75",
-    "next-auth": "5.0.0-beta.19",
     "postcss": "^8.4.39",
     "prettier": "^3.3.2",
     "prop-types": "^15.8.1",
@@ -38,5 +41,8 @@
     "singleQuote": true,
     "tabWidth": 2,
     "trailingComma": "none"
+  },
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6"
   }
 }

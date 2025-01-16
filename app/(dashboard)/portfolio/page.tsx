@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
 import DeleteButton from '@/components/ui/deleteButton';
-import { useSession } from 'next-auth/react';
+import { useSession } from 'contexts/SessionContext';
 
 interface TrademarkEntry {
   applicationNo: string;
@@ -79,7 +79,7 @@ const CompanySelectionComponent = () => {
   const [trademarks, setTrademarks] = useState<TrademarkEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
-  const { data: sessionData, status } = useSession();
+  const { token } = useSession();
 
   const fetchTrademarks = () => {
     setLoading(true);
@@ -88,7 +88,7 @@ const CompanySelectionComponent = () => {
     if (status === 'authenticated') {
       fetch(finalUrl, {
         headers: {
-          Authorization: `Bearer ${sessionData.user.token}`
+          Authorization: `Bearer ${token}`
         }
       })
         .then((response) => {
@@ -128,7 +128,7 @@ const CompanySelectionComponent = () => {
 
     fetch(finalUrl, {
       headers: {
-        Authorization: `Bearer ${sessionData!.user.token}`
+        Authorization: `Bearer ${token}`
       }
     })
       .then((response) => {
@@ -169,7 +169,7 @@ const CompanySelectionComponent = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionData!.user.token}`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(applicationIds)
     })
