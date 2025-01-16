@@ -85,41 +85,39 @@ const CompanySelectionComponent = () => {
     setLoading(true);
     const finalUrl = `${url}/get/our_trademarks`;
 
-    if (status === 'authenticated') {
-      fetch(finalUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`
+    fetch(finalUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then((data) => {
-          const mappedTrademarks: TrademarkEntry[] = data.map(
-            (item: {
-              applicationNumber: any;
-              tmAppliedFor: any;
-              tmClass: any;
-              status: any;
-            }) => ({
-              applicationNo: item.applicationNumber,
-              trademark: item.tmAppliedFor,
-              classNo: item.tmClass,
-              status: item.status
-            })
-          );
-          setTrademarks(mappedTrademarks);
-        })
-        .catch((error) => {
-          console.error('There was a problem with the fetch operation:', error);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }
+      .then((data) => {
+        const mappedTrademarks: TrademarkEntry[] = data.map(
+          (item: {
+            applicationNumber: any;
+            tmAppliedFor: any;
+            tmClass: any;
+            status: any;
+          }) => ({
+            applicationNo: item.applicationNumber,
+            trademark: item.tmAppliedFor,
+            classNo: item.tmClass,
+            status: item.status
+          })
+        );
+        setTrademarks(mappedTrademarks);
+      })
+      .catch((error) => {
+        console.error('There was a problem with the fetch operation:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const handleDelete = (applicationId: string) => {

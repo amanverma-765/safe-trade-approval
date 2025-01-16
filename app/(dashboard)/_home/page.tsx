@@ -20,7 +20,6 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
 import { useSession } from 'contexts/SessionContext';
-// import { useSession } from 'contexts/SessionContext';
 
 // Define the type for the Journal entries
 interface JournalEntry {

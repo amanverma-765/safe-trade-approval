@@ -76,37 +76,35 @@ const usePdfHandler = () => {
 
     setIsPdfProcessing(true);
 
-    if (status === 'authenticated') {
-      fetch(fileUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`
+    fetch(fileUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+        const blobUrl = URL.createObjectURL(pdfBlob);
+
+        if (download) {
+          downloadPdf(blobUrl, reportId);
+        } else {
+          viewPdf(blobUrl);
         }
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.blob();
-        })
-        .then((blob) => {
-          const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-          const blobUrl = URL.createObjectURL(pdfBlob);
-
-          if (download) {
-            downloadPdf(blobUrl, reportId);
-          } else {
-            viewPdf(blobUrl);
-          }
-        })
-        .catch((error) => {
-          console.error('There was a problem with the fetch operation:', error);
-        })
-        .finally(() => {
-          setTimeout(() => {
-            setIsPdfProcessing(false);
-          }, 200);
-        });
-    }
+      .catch((error) => {
+        console.error('There was a problem with the fetch operation:', error);
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setIsPdfProcessing(false);
+        }, 200);
+      });
   };
 
   return { handlePdf, isPdfProcessing };
@@ -121,45 +119,43 @@ const useReports = () => {
   const fetchReports = () => {
     setIsLoading(true);
 
-    if (status === 'authenticated') {
-      fetch(`${url}/get/generated_reports`, {
-        headers: {
-          Authorization: `Bearer ${token}`
+    fetch(`${url}/get/generated_reports`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
+        return response.json();
       })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.json();
-        })
-        .then((data) => {
-          const mappedReport: PDFReport[] = data.map(
-            (item: {
-              report: string;
-              reportId: string;
-              journalNumber: string;
-              ourAppId: string;
-              journalAppId: string;
-            }) => ({
-              title: item.report.replace(/_/g, ' ').replace(/\.pdf$/, ''),
-              report_id: item.reportId,
-              journal_number: item.journalNumber,
-              our_app_id: item.ourAppId,
-              journal_app_id: item.journalAppId
-            })
-          );
-          setReports(mappedReport);
-        })
-        .catch((error) => {
-          console.error('There was a problem with the fetch operation:', error);
-        })
-        .finally(() => {
-          setTimeout(() => {
-            setIsLoading(false);
-          }, 200);
-        });
-    }
+      .then((data) => {
+        const mappedReport: PDFReport[] = data.map(
+          (item: {
+            report: string;
+            reportId: string;
+            journalNumber: string;
+            ourAppId: string;
+            journalAppId: string;
+          }) => ({
+            title: item.report.replace(/_/g, ' ').replace(/\.pdf$/, ''),
+            report_id: item.reportId,
+            journal_number: item.journalNumber,
+            our_app_id: item.ourAppId,
+            journal_app_id: item.journalAppId
+          })
+        );
+        setReports(mappedReport);
+      })
+      .catch((error) => {
+        console.error('There was a problem with the fetch operation:', error);
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 200);
+      });
   };
 
   const handleDelete = (reportId: string) => {

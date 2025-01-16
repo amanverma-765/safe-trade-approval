@@ -51,7 +51,7 @@ function SessionProvider({ children }: { children: ReactNode }) {
           router.push('/login');
         } else {
           setToken(token); // Token is valid
-          router.push('/');
+          router.back();
         }
       } catch (error) {
         console.error('Invalid token:', error);
