@@ -17,8 +17,14 @@ interface SessionContextType {
   token: string | undefined;
   setToken: (token: string | undefined) => void;
   signOut: (e: FormEvent) => void;
-  signIn: (e: FormEvent, email: string, password: string) => void;
+  signIn: (e: FormEvent, email: string, password: string) => Promise<SignInResult>;
 }
+
+interface SignInResult {
+  error?: string;
+  token?: string;
+}
+
 
 // Create the context with the appropriate type
 const SessionContext = createContext<SessionContextType | null>(null);
@@ -29,15 +35,6 @@ function SessionProvider({ children }: { children: ReactNode }) {
   );
   const pathname = usePathname();
   const router = useRouter();
-
-  // useEffect(() => {
-  //   const isLoggedIn = !!Cookies.get('jwtToken');
-  //   if (!isLoggedIn && pathname !== '/login') {
-  //     router.push('/login');
-  //   } else if (token) {
-  //     router.push('/');
-  //   }
-  // }, [token, pathname, router]);
 
   useEffect(() => {
     if (!token && pathname !== '/login') {
@@ -51,7 +48,7 @@ function SessionProvider({ children }: { children: ReactNode }) {
           router.push('/login');
         } else {
           setToken(token); // Token is valid
-          router.back();
+          router.push("/");
         }
       } catch (error) {
         console.error('Invalid token:', error);
@@ -62,7 +59,7 @@ function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  async function signIn(e: FormEvent, email: string, password: string) {
+  async function signIn(e: FormEvent, email: string, password: string): Promise<SignInResult> {
     e.preventDefault();
     try {
       const response = await axios.post(
@@ -73,24 +70,28 @@ function SessionProvider({ children }: { children: ReactNode }) {
         }
       );
 
-      if (!response) {
-        throw response; // Let the calling function handle it
+      // Handle invalid or missing response
+      if (!response || !response.data) {
+        return { error: 'Invalid email or password' };
       }
 
-      // Store the JWT token in a cookie
-      if (response.data) {
-        Cookies.set('jwtToken', response.data.token, {
-          expires: 1, // Expires in 1 days
-          secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-          sameSite: 'strict' // Prevent CSRF attacks
-        });
-        setToken(response.data.token);
-      }
+      // If response is valid, save the token
+      Cookies.set('jwtToken', response.data.token, {
+        expires: 1,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      setToken(response.data.token);
 
-      return response.data;
-    } catch (error) {
+      // Return the token as part of the successful response
+      return { token: response.data.token };
+    } catch (error: any) {
+      // Handle errors from the server or network
       console.error('Login error:', error);
-      return { error };
+
+      return {
+        error: error.response?.data?.message || 'Invalid email or password'
+      };
     }
   }
 

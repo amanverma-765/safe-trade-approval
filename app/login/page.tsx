@@ -18,6 +18,16 @@ export default function LoginPage() {
 
   const { signIn } = useSession();
 
+  async function handleLogin(e: FormEvent) {
+    const result = await signIn(e, email, password);
+    if (result.error) {
+      setError(result.error); // Set the error message
+    } else {
+      setError(''); // Clear the error message on successful login
+    }
+  }
+
+
   return (
     <div className="min-h-screen flex justify-center items-start md:items-center p-8">
       <Card className="w-full max-w-sm">
@@ -25,15 +35,11 @@ export default function LoginPage() {
           <CardTitle className="text-2xl">Login</CardTitle>
         </CardHeader>
         <CardFooter>
-          {/* Email-password login form */}
-          <form
-            className="w-full space-y-4"
-            onSubmit={(e) => signIn(e, email, password)}
-          >
+          <form className="w-full space-y-4" onSubmit={handleLogin}>
             <div>
               <label className="block text-sm font-medium">Email</label>
               <input
-                type="email"
+                type="text"
                 className="w-full border rounded px-3 py-2 mt-1"
                 placeholder="Enter your email"
                 value={email}
@@ -52,7 +58,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-sm">{error}</p>} {/* Show error */}
             <Button type="submit" className="w-full">
               Sign in
             </Button>
