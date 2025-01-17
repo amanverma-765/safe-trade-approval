@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
 import DeleteButton from '@/components/ui/deleteButton';
+import { useSession } from 'contexts/SessionContext';
 
 interface TrademarkEntry {
   applicationNo: string;
@@ -78,12 +79,17 @@ const CompanySelectionComponent = () => {
   const [trademarks, setTrademarks] = useState<TrademarkEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
+  const { token } = useSession();
 
   const fetchTrademarks = () => {
     setLoading(true);
     const finalUrl = `${url}/get/our_trademarks`;
 
-    fetch(finalUrl)
+    fetch(finalUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -118,7 +124,11 @@ const CompanySelectionComponent = () => {
     setDeleting(true);
     const finalUrl = `${url}/delete/our/application/${applicationId}`;
 
-    fetch(finalUrl)
+    fetch(finalUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then((response) => {
         if (!response.ok) {
           return response.json().then((errorResponse) => {
@@ -144,9 +154,9 @@ const CompanySelectionComponent = () => {
       return;
     }
 
-    const applicationIds = applicationId.split(',').map(id => id.trim());
-    if (applicationIds.length === 0 || applicationIds.some(id => id === '')) {
-      alert("Please provide valid application IDs separated by commas.");
+    const applicationIds = applicationId.split(',').map((id) => id.trim());
+    if (applicationIds.length === 0 || applicationIds.some((id) => id === '')) {
+      alert('Please provide valid application IDs separated by commas.');
       return;
     }
 
@@ -156,14 +166,16 @@ const CompanySelectionComponent = () => {
     fetch(finalUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify(applicationIds)
     })
       .then(async (response) => {
         if (!response.ok) {
           return response.json().then((errorResponse) => {
-            const firstError = errorResponse[0]?.message || "An unknown error occurred.";
+            const firstError =
+              errorResponse[0]?.message || 'An unknown error occurred.';
             alert(firstError);
           });
         }

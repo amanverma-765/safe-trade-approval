@@ -1,6 +1,6 @@
-import { auth } from '@/lib/auth';
+import { SessionProvider } from 'contexts/SessionContext';
 import './globals.css';
-import { redirect } from 'next/navigation';
+import { ReactNode } from 'react';
 
 export const metadata = {
   title: 'Trademark - SafeTradeApprovals',
@@ -13,15 +13,16 @@ export const metadata = {
 export default function RootLayout({
   children
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const session = auth();
-  if (!session) {
-    redirect('/login');
-  }
+
   return (
     <html lang="en">
-      <body className="flex min-h-screen w-full flex-col">{children}</body>
+      <body className="flex min-h-screen w-full flex-col">
+        <SessionProvider>
+        {children}
+        </SessionProvider>
+      </body>
     </html>
   );
 }

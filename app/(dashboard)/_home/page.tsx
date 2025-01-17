@@ -16,11 +16,10 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CircularLoader from '@/components/ui/loader';
-import { map } from 'zod';
+import { useSession } from 'contexts/SessionContext';
 
 // Define the type for the Journal entries
 interface JournalEntry {
@@ -70,7 +69,6 @@ function ProductsTable({
   onPrevPage: () => void;
   onNextPage: () => void;
 }) {
-  const router = useRouter();
   const journalsPerPage = 16;
 
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -86,6 +84,8 @@ function ProductsTable({
   const [currentReportPage, setCurrentReportPage] = useState(0);
   const reportsPerPage = 25; // You can adjust this number
 
+  const { token } = useSession();
+
   const handleRowSelect = (journalNo: string) => {
     setSelectedRows((prevSelected) => {
       const updatedSelected = new Set(prevSelected);
@@ -99,7 +99,6 @@ function ProductsTable({
   };
 
   const handleSearchReport = async () => {
-
     setMatchingData(new Map()); // This will reset the Map to an empty state.
 
     const selectedJournals = journals.filter((journal) =>
@@ -111,79 +110,81 @@ function ProductsTable({
     }
 
     setIsLoading(true);
-    await Promise.all(
-      selectedJournals.map(async (selectedJournal) => {
-        try {
-          const matchedTrademarks = await fetch(
-            `${url}/match_trademarks/${selectedJournal.journalNo}`
-          );
 
-          if (!matchedTrademarks.ok) {
-            return matchedTrademarks.json().then((errorData) => {
-              throw new Error(
-                `Error: ${errorData.status} ${errorData.message}`
-              );
-            });
+    const query = selectedJournals.map((item) => item.journalNo).join('&');
+    try {
+      const matchedTrademarks = await fetch(
+        `${url}/match_trademarks/${query}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-
-          const data = await matchedTrademarks.json();
-
-          const mappedData: MatchingData[] = data.map(
-            (item: {
-              journalNumber: string;
-              tmClass: string;
-              journalTrademark: {
-                tmApplicationNumber: string;
-                tmAppliedFor: string;
-                tmClass: string;
-              };
-              ourTrademarks: Array<{
-                tmApplicationNumber: string;
-                tmAppliedFor: string;
-                tmClass: string;
-              }>;
-            }) => {
-              return {
-                applicationNoJournalTM: item.journalTrademark.tmApplicationNumber,
-                ourMatchedTrademarks: item.ourTrademarks.map((tm) => ({
-                  tmApplicationNumber: tm.tmApplicationNumber,
-                  tmAppliedFor: tm.tmAppliedFor,
-                })),
-                journalTM: item.journalTrademark.tmAppliedFor,
-                class: item.tmClass,
-              };
-            }
-          );
-
-          setMatchingData((prevMappedMap) => {
-            const updatedMappedMap = new Map(prevMappedMap);
-            updatedMappedMap.set(selectedJournal.journalNo, mappedData);
-            return updatedMappedMap;
-          });
-          
-          setIsLoading(false);
-        } catch (error) {
-          console.error('Fetch operation failed:', error);
-          return null;
-        } finally {
-          setIsLoading(false);
         }
-      })
-    );
+      );
+
+      if (!matchedTrademarks.ok) {
+        return matchedTrademarks.json().then((errorData) => {
+          throw new Error(`Error: ${errorData.status} ${errorData.message}`);
+        });
+      }
+
+      const data = await matchedTrademarks.json();
+
+      const mappedData: MatchingData[] = data.map(
+        (item: {
+          journalNumber: string;
+          tmClass: string;
+          journalTrademark: {
+            tmApplicationNumber: string;
+            tmAppliedFor: string;
+            tmClass: string;
+          };
+          ourTrademarks: Array<{
+            tmApplicationNumber: string;
+            tmAppliedFor: string;
+            tmClass: string;
+          }>;
+        }) => {
+          return {
+            applicationNoJournalTM: item.journalTrademark.tmApplicationNumber,
+            ourMatchedTrademarks: item.ourTrademarks.map((tm) => ({
+              tmApplicationNumber: tm.tmApplicationNumber,
+              tmAppliedFor: tm.tmAppliedFor
+            })),
+            journalTM: item.journalTrademark.tmAppliedFor,
+            class: item.tmClass
+          };
+        }
+      );
+
+      setMatchingData((prevMappedMap) => {
+        const updatedMappedMap = new Map(prevMappedMap);
+        updatedMappedMap.set(selectedJournals[0].journalNo, mappedData);
+        return updatedMappedMap;
+      });
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Fetch operation failed:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGenerateIndividualOpposition = async () => {
     try {
-
-      setIsLoading(true);
+      // setIsLoading(true);
       // Prepare data for opposition generation
       const oppositionData = Array.from(selectedOurTM.entries()).flatMap(
         ([journalNumber, journalAppIdMap]) =>
-          Array.from(journalAppIdMap.entries()).map(([journalAppId, ourAppIdList]) => ({
-            journalAppId,
-            journalNumber,
-            ourAppIdList: Array.from(ourAppIdList),
-          }))
+          Array.from(journalAppIdMap.entries()).map(
+            ([journalAppId, ourAppIdList]) => ({
+              journalAppId,
+              journalNumber,
+              ourAppIdList: Array.from(ourAppIdList)
+            })
+          )
       );
 
       // Make API calls for opposition generation
@@ -193,8 +194,9 @@ function ProductsTable({
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
             },
-            body: JSON.stringify(opposition),
+            body: JSON.stringify(opposition)
           })
         )
       );
@@ -203,7 +205,9 @@ function ProductsTable({
       const data = await Promise.all(
         responses.map((response) => {
           if (!response.ok) {
-            throw new Error(`Failed to generate report: ${response.statusText}`);
+            throw new Error(
+              `Failed to generate report: ${response.statusText}`
+            );
           }
           return response.json();
         })
@@ -216,7 +220,9 @@ function ProductsTable({
       window.open('/oppositions', '_blank');
     } catch (error) {
       console.error('Error generating opposition:', error);
-      alert('An error occurred while generating individual opposition reports.');
+      alert(
+        'An error occurred while generating individual opposition reports.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -230,14 +236,16 @@ function ProductsTable({
     console.log('Toggling selection:', {
       journalNo,
       applicationNoJournalTM,
-      ourTMValue,
+      ourTMValue
     });
 
     setSelectedOurTM((prevSelected) => {
       // Create deep copies of the Maps to ensure immutability
       const updatedSelected = new Map(prevSelected);
       const journalMap = new Map(updatedSelected.get(journalNo) || []);
-      const applicationSet = new Set(journalMap.get(applicationNoJournalTM) || []);
+      const applicationSet = new Set(
+        journalMap.get(applicationNoJournalTM) || []
+      );
 
       // Toggle the value in the set
       if (applicationSet.has(ourTMValue)) {
@@ -262,7 +270,6 @@ function ProductsTable({
       return updatedSelected;
     });
   };
-
 
   const prevReportPage = () => {
     setCurrentReportPage((prev) => Math.max(0, prev - 1));
@@ -387,7 +394,7 @@ function ProductsTable({
                     dataArray.map((data, index) => ({
                       journalNumber,
                       data,
-                      index,
+                      index
                     }))
                   )
                   .slice(
@@ -400,7 +407,9 @@ function ProductsTable({
                       <TableHead>
                         <input
                           type="checkbox"
-                          checked={selectedRows.has(data.applicationNoJournalTM)}
+                          checked={selectedRows.has(
+                            data.applicationNoJournalTM
+                          )}
                           onChange={() =>
                             handleRowSelect(data.applicationNoJournalTM)
                           }
@@ -504,7 +513,7 @@ function ProductsTable({
             </div>
           </CardFooter>
         </Card>
-        )}
+      )}
     </>
   );
 }
@@ -513,12 +522,18 @@ const HomePage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const { token } = useSession();
+
   const journalsPerPage = 16;
 
   useEffect(() => {
     setLoading(true);
 
-    fetch(`${url}/get/latest_journals`)
+    fetch(`${url}/get/latest_journals`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
       .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
