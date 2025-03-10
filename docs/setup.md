@@ -41,6 +41,19 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+
+server {
+    listen 8888;
+    server_name api.stalogin.com;
+
+    location / {
+        proxy_pass http://localhost:8888;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
 3. Enable the configuration by creating a symbolic link:
