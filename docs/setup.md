@@ -53,6 +53,12 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/api.stalogin.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/api.stalogin.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 }
 ```
 
@@ -80,7 +86,7 @@ sudo apt install certbot python3-certbot-nginx -y
 2. Obtain the SSL certificate:
 
 ```bash
-sudo certbot --nginx -d stalogin.com -d www.stalogin.com
+sudo certbot --nginx -d stalogin.com -d www.stalogin.com -d api.stalogin.com
 ```
 
 3. Follow the prompts to complete the SSL certificate installation.
