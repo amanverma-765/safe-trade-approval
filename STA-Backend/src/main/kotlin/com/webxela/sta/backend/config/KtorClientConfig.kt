@@ -32,9 +32,9 @@ class KtorClientConfig {
             }
             install(HttpTimeout)
             {
-                 requestTimeoutMillis = 10000
-                 connectTimeoutMillis = 10000
-                 socketTimeoutMillis = 10000
+                 requestTimeoutMillis = 20000
+                 connectTimeoutMillis = 20000
+                 socketTimeoutMillis = 20000
             }
             engine {
                 https {
