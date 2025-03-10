@@ -33,6 +33,7 @@ class StaScraper(
             val httpClient = httpClientConfig.createHttpClient()
             val captcha = getCaptcha(httpClient)
             trademark = scrapeTrademark(httpClient = httpClient, appId = appId, captcha = captcha)
+//            logger.error("877777777777fg================= is $trademark")
         } catch (ex: Exception) {
             logger.error("Error while scraping by application id ${ex.message}")
             throw ex

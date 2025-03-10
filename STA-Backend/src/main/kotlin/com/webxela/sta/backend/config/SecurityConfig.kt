@@ -50,7 +50,7 @@ class SecurityConfig(
                     .pathMatchers(
                         "/api/v1/sta/auth/login",
                         "/api/v1/sta/docs",
-                        //    "/api/v1/sta/**"
+                            "/api/v1/sta/**"
                     ).permitAll()
                     .anyExchange().authenticated()
             }

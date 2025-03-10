@@ -30,26 +30,35 @@ class TrademarkScraper(
         captcha: String
     ): String? {
 
-        val initialResponse: String?
+        val initialTmResponse: String?
 
-        val initialFormData = payloadParser.getStaticFormData(appId, captcha)
+        val firstPageResponse = httpClient.get(TRADEMARK_URL).bodyAsText()
+        val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse)
 
-        // Retry mechanism for the initial POST request
-        initialResponse = retry(maxRetries, retryDelay) {
+        val secondPageResponse = retry(maxRetries, retryDelay) {
             httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
-                setBody(initialFormData)
+                setBody(firstPageFormData)
+            }.bodyAsText()
+        }
+        val secondPageFormData = payloadParser.getPayloadFromSecondPage(appId, captcha, secondPageResponse)
+
+        // Retry mechanism for the initial POST request
+        initialTmResponse = retry(maxRetries, retryDelay) {
+            httpClient.post(TRADEMARK_URL) {
+                contentType(ContentType.MultiPart.FormData)
+                setBody(secondPageFormData)
             }.bodyAsText()
         }
 
-        if (!trademarkParser.checkIfOnRightPage(initialResponse)) {
+        if (!trademarkParser.checkIfOnRightPage(initialTmResponse)) {
             val errorMessage = "No Trademark found, Either Trademark number is invalid or doesn't exist"
             logger.error(errorMessage)
         }
 
         // Retry mechanism for the final POST request
         val finalResponse: String = retry(maxRetries, retryDelay) {
-            val finalFormData = payloadParser.parsePayloadToFormData(response = initialResponse)
+            val finalFormData = payloadParser.getPayloadForThirdPage(response = initialTmResponse)
             httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
                 setBody(finalFormData)
