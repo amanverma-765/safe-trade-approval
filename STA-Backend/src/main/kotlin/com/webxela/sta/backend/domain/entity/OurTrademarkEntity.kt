@@ -3,7 +3,7 @@ package com.webxela.sta.backend.domain.entity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "our_trademark") // Specify the table name in the database
+@Table(name = "our_trademark")
 data class OurTrademarkEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

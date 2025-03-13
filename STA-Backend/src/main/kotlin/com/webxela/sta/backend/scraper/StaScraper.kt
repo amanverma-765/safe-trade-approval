@@ -33,7 +33,6 @@ class StaScraper(
             val httpClient = httpClientConfig.createHttpClient()
             val captcha = getCaptcha(httpClient)
             trademark = scrapeTrademark(httpClient = httpClient, appId = appId, captcha = captcha)
-//            logger.error("877777777777fg================= is $trademark")
         } catch (ex: Exception) {
             logger.error("Error while scraping by application id ${ex.message}")
             throw ex
@@ -73,7 +72,7 @@ class StaScraper(
     suspend fun scrapeTrademarkByList(
         applicationNumberList: List<String>,
         threadCount: Int = MAX_THREADS
-    ): List<Trademark>? {
+    ): List<Trademark> {
         val tData = mutableListOf<Trademark>()
         val chunks: List<List<String>> = if (applicationNumberList.size <= threadCount) {
             listOf(applicationNumberList)
@@ -106,7 +105,7 @@ class StaScraper(
             tData // Return collected data only if everything succeeds
         } catch (e: Exception) {
             println("Error during scraping: ${e.message}")
-            null // Return null if any error occurs
+            emptyList()
         } finally {
             threadPool.close()
         }

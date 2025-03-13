@@ -32,8 +32,12 @@ class TrademarkScraper(
 
         val initialTmResponse: String?
 
-        val firstPageResponse = httpClient.get(TRADEMARK_URL).bodyAsText()
-        val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse)
+        val firstPageResponse = httpClient.get(TRADEMARK_URL)
+        if (firstPageResponse.status != HttpStatusCode.OK) {
+            logger.error("Failed to fetch Trademark data, getting non ok HTTP response")
+            return null
+        }
+        val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse.bodyAsText())
 
         val secondPageResponse = retry(maxRetries, retryDelay) {
             httpClient.post(TRADEMARK_URL) {

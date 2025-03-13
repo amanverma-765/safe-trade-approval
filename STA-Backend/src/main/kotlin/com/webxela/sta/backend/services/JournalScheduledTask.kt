@@ -8,6 +8,7 @@ import com.webxela.sta.backend.scraper.LatestJournalScraper
 import com.webxela.sta.backend.scraper.StaScraper
 import com.webxela.sta.backend.utils.Constants.MAX_JOURNALS
 import com.webxela.sta.backend.utils.extractNumbersFromPDF
+import com.webxela.sta.backend.utils.retryWithExponentialBackoff
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -15,7 +16,6 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.nio.file.Paths
-import kotlin.time.Duration.Companion.seconds
 
 @Service
 class JournalScheduledTask(
@@ -26,26 +26,17 @@ class JournalScheduledTask(
 ) {
     private val logger = LoggerFactory.getLogger(JournalScheduledTask::class.java)
 
-    data class RetryConfig(
-        val maxAttempts: Int = 10,
-        val initialDelay: Long = 5,  // seconds
-        val maxDelay: Long = 300,     // seconds
-        val factor: Double = 2.0
-    )
-
     sealed class ScrapingResult {
         data object Success : ScrapingResult()
         data object JournalExists : ScrapingResult()
         data class Error(val exception: Exception) : ScrapingResult()
     }
 
-    fun runTaskManually() {
+    fun runJournalScrapingTaskManually() {
         scheduleLatestJournalScraping()
     }
 
-    private suspend fun processJournalGroup(
-        journalGroup: List<LatestJournal>
-    ): ScrapingResult {
+    private suspend fun processJournalGroup(journalGroup: List<LatestJournal>): ScrapingResult {
         return try {
             val tableName = "journal_${journalGroup.first().journalNumber}"
 
@@ -58,7 +49,7 @@ class JournalScheduledTask(
 
             val applicationNumberList = extractNumbersFromPDF(savedFilePathList)
             val journalData = staScraper.scrapeTrademarkByList(applicationNumberList)
-            if (journalData.isNullOrEmpty()) throw RuntimeException("Failed to scrape journal: ${journalGroup.first().journalNumber}")
+            if (journalData.isEmpty()) throw RuntimeException("Failed to scrape journal: ${journalGroup.first().journalNumber}")
 
             // Save the data
             journalData.let { trademarks ->
@@ -85,37 +76,9 @@ class JournalScheduledTask(
         }
     }
 
-    private suspend fun <T> retryWithExponentialBackoff(
-        config: RetryConfig = RetryConfig(),
-        operation: suspend () -> T
-    ): T {
-        var currentDelay = config.initialDelay
-        var attemptCount = 0
-
-        while (true) {
-            try {
-                return operation()
-            } catch (e: Exception) {
-                attemptCount++
-                if (attemptCount >= config.maxAttempts) {
-                    logger.error("Final attempt $attemptCount failed after ${config.maxAttempts} retries", e)
-                    throw RuntimeException("Operation failed after ${config.maxAttempts} attempts", e)
-                }
-
-                logger.warn("Attempt $attemptCount failed, retrying in $currentDelay seconds", e)
-                delay(currentDelay.seconds)
-
-                // Calculate next delay with exponential backoff
-                currentDelay = (currentDelay * config.factor)
-                    .toLong()
-                    .coerceAtMost(config.maxDelay)
-            }
-        }
-    }
-
-
     @Scheduled(cron = "0 0 0 * * WED", zone = "Asia/Kolkata")
     fun scheduleLatestJournalScraping() {
+        logger.info("Starting scheduled journal scraping task")
         runBlocking {
             try {
                 retryWithExponentialBackoff {

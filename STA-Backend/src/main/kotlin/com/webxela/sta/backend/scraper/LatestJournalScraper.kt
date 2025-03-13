@@ -16,6 +16,8 @@ import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Component
 class LatestJournalScraper(private val httpClientConfig: KtorClientConfig) {
@@ -43,19 +45,29 @@ class LatestJournalScraper(private val httpClientConfig: KtorClientConfig) {
 
                         // Extract the journal file paths
                         val journalPaths = row.select("form input[name=FileName]").map { it.attr("value") }
-
                         val regex = Regex("([^\\\\/]+\\.pdf)$")
 
                         journalPaths.forEach { path ->
                             val matchResult = regex.find(path)
                             val filename = matchResult?.groups?.get(1)?.value
                             filename?.let { name ->
+                                // Parse and adjust the date of availability (add 4 months)
+                                val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                val adjustedDateOfAvailability = try {
+                                    val parsedDate = LocalDate.parse(dateOfAvailability, dateFormatter)
+                                    val adjustedDate = parsedDate.plusMonths(4)
+                                    adjustedDate.format(dateFormatter)
+                                } catch (e: Exception) {
+                                    logger.warn("Failed to parse or adjust date: $dateOfAvailability, using original value")
+                                    dateOfAvailability
+                                }
+
                                 // Add journal to the list
                                 journals.add(
                                     LatestJournal(
                                         journalNumber = journalNumber,
                                         dateOfPublication = dateOfPublication,
-                                        dateOfAvailability = dateOfAvailability,
+                                        dateOfAvailability = adjustedDateOfAvailability,
                                         filePath = path,
                                         fileName = name
                                     )

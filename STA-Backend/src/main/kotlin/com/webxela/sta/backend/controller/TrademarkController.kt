@@ -4,6 +4,7 @@ import com.webxela.sta.backend.domain.model.ErrorResponse
 import com.webxela.sta.backend.domain.model.JournalRequest
 import com.webxela.sta.backend.domain.model.ReportGenRequest
 import com.webxela.sta.backend.services.JournalScheduledTask
+import com.webxela.sta.backend.services.OurTrademarkScheduledTask
 import com.webxela.sta.backend.services.TrademarkMatchingService
 import com.webxela.sta.backend.services.TrademarkService
 import com.webxela.sta.backend.utils.isExcelFile
@@ -18,7 +19,8 @@ import org.springframework.web.bind.annotation.*
 class TrademarkController(
     private val trademarkService: TrademarkService,
     private val trademarkMatchingService: TrademarkMatchingService,
-    private val journalScheduledTask: JournalScheduledTask
+    private val journalScheduledTask: JournalScheduledTask,
+    private val ourTrademarkScheduledTask: OurTrademarkScheduledTask
 ) {
 
     @GetMapping("/get/latest_journals")
@@ -123,11 +125,20 @@ class TrademarkController(
 //        }
 //    }
 
-    @GetMapping("/start_schedule_task")
-    suspend fun startScheduleTask(): ResponseEntity<Any> {
+    @GetMapping("/start_schedule_task/{task}")
+    suspend fun startScheduleTask(@PathVariable task: String): ResponseEntity<Any> {
         try {
-            journalScheduledTask.runTaskManually()
-            return ResponseEntity.ok("Schedule task finished successfully")
+            when (task) {
+                "journal" -> {
+                    journalScheduledTask.runJournalScrapingTaskManually()
+                    return ResponseEntity.ok("Latest journal scraped successfully")
+                }
+                "ourTm" -> {
+                    ourTrademarkScheduledTask.runOurTrademarkStatusUpdateManually()
+                    return ResponseEntity.ok("Status update for our trademarks completed successfully")
+                }
+                else -> return ResponseEntity.ok("Invalid task specified, please initiate a valid task")
+            }
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error)

@@ -334,10 +334,26 @@
 
 <div class="endpoint">
     <h4>8. Start Schedule Task</h4>
-    <p><strong>GET</strong> <code>/start_schedule_task</code></p>
-    <p>Manually starts a scheduled task.</p>
+    <p><strong>GET</strong> <code>/start_schedule_task/{task}</code></p>
+    <p>Manually starts a scheduled task based on the provided task parameter.</p>
+    <h5>Path Variable</h5>
+    <table>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>task</td>
+            <td>The task to run. Valid values are "journal" for scraping latest journals or "ourTm" for updating our trademark statuses.</td>
+        </tr>
+    </table>
     <h5>Response</h5>
-    <pre>"Schedule task finished successfully"</pre>
+    <p>For task="journal":</p>
+    <pre>"Latest journal scraped successfully"</pre>
+    <p>For task="ourTm":</p>
+    <pre>"Status update for our trademarks completed successfully"</pre>
+    <p>For invalid task:</p>
+    <pre>"Invalid task specified, please initiate a valid task"</pre>
 </div>
 
 <div class="endpoint">
