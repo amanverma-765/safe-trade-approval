@@ -103,7 +103,11 @@ class TrademarkController(
         @PathVariable journalNumber: String
     ): ResponseEntity<List<Any>> {
         try {
-            val matchingResult = trademarkMatchingService.findMatchingTrademarks(journalNumber)
+            val matchingResult = mutableListOf<Any>()
+            journalNumber.split("&").forEach { journal ->
+                val result = trademarkMatchingService.findMatchingTrademarks(journal)
+                matchingResult.addAll(result)
+            }
             return ResponseEntity.ok(matchingResult)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
