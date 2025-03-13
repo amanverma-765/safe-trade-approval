@@ -34,7 +34,7 @@ class TrademarkScraper(
 
         val firstPageResponse = httpClient.get(TRADEMARK_URL)
         if (firstPageResponse.status != HttpStatusCode.OK) {
-            logger.error("Failed to fetch Trademark data, getting non ok HTTP response")
+            logger.error("Failed to fetch Trademark data, getting status code ${firstPageResponse.status.value} ")
             return null
         }
         val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse.bodyAsText())
