@@ -3,7 +3,7 @@ package com.webxela.sta.backend.controller
 import com.webxela.sta.backend.domain.model.ErrorResponse
 import com.webxela.sta.backend.domain.model.JournalRequest
 import com.webxela.sta.backend.domain.model.ReportGenRequest
-import com.webxela.sta.backend.services.ScheduledTaskService
+import com.webxela.sta.backend.services.JournalScheduledTask
 import com.webxela.sta.backend.services.TrademarkMatchingService
 import com.webxela.sta.backend.services.TrademarkService
 import com.webxela.sta.backend.utils.isExcelFile
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*
 class TrademarkController(
     private val trademarkService: TrademarkService,
     private val trademarkMatchingService: TrademarkMatchingService,
-    private val scheduledTaskService: ScheduledTaskService
+    private val journalScheduledTask: JournalScheduledTask
 ) {
 
     @GetMapping("/get/latest_journals")
@@ -126,7 +126,7 @@ class TrademarkController(
     @GetMapping("/start_schedule_task")
     suspend fun startScheduleTask(): ResponseEntity<Any> {
         try {
-            scheduledTaskService.runTaskManually()
+            journalScheduledTask.runTaskManually()
             return ResponseEntity.ok("Schedule task finished successfully")
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
