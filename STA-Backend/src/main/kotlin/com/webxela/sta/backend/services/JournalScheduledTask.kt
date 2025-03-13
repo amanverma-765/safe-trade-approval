@@ -100,7 +100,7 @@ class JournalScheduledTask(
                         return@retryWithExponentialBackoff
                     }
 
-                    logger.info("Found ${journalsToProcess.size} new journals to process")
+                    logger.info("Found ${journalsToProcess.map { it.journalNumber }} new journals to process")
 
                     // Process each new journal group sequentially
                     val groupedJournals = journalsToProcess.groupBy { it.journalNumber }.values.map { it.toList() }
