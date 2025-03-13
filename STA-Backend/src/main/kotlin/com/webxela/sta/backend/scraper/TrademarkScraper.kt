@@ -22,7 +22,7 @@ class TrademarkScraper(
 
     // Retry parameters
     private val maxRetries = 4 // Maximum number of retries
-    private val retryDelay = 2000L // Delay between retries (in milliseconds)
+    private val retryDelay = 5000L // Delay between retries (in milliseconds)
 
     suspend fun requestTrademarkData(
         httpClient: HttpClient,
@@ -30,38 +30,37 @@ class TrademarkScraper(
         captcha: String
     ): String? {
 
-        val initialTmResponse: String?
+        val finalResponse = retry(maxRetries, retryDelay) {
 
-        val firstPageResponse = httpClient.get(TRADEMARK_URL)
-        if (firstPageResponse.status != HttpStatusCode.OK) {
-            logger.error("Failed to fetch Trademark data, getting status code ${firstPageResponse.status.value} ")
-            return null
-        }
-        val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse.bodyAsText())
+            logger.info("Extraction started for $appId")
 
-        val secondPageResponse = retry(maxRetries, retryDelay) {
-            httpClient.post(TRADEMARK_URL) {
-                contentType(ContentType.MultiPart.FormData)
-                setBody(firstPageFormData)
-            }.bodyAsText()
-        }
-        val secondPageFormData = payloadParser.getPayloadFromSecondPage(appId, captcha, secondPageResponse)
+            val firstPageResponse = httpClient.get(TRADEMARK_URL)
+            if (firstPageResponse.status != HttpStatusCode.OK) {
+                logger.error("Failed to fetch Trademark data, getting status code ${firstPageResponse.status.value} ")
+                return@retry null
+            }
+            val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse.bodyAsText())
 
-        // Retry mechanism for the initial POST request
-        initialTmResponse = retry(maxRetries, retryDelay) {
-            httpClient.post(TRADEMARK_URL) {
+            val secondPageResponse = retry(maxRetries, retryDelay) {
+                httpClient.post(TRADEMARK_URL) {
+                    contentType(ContentType.MultiPart.FormData)
+                    setBody(firstPageFormData)
+                }.bodyAsText()
+            }
+            val secondPageFormData = payloadParser.getPayloadFromSecondPage(appId, captcha, secondPageResponse)
+
+            val initialTmResponse = httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
                 setBody(secondPageFormData)
             }.bodyAsText()
-        }
 
-        if (!trademarkParser.checkIfOnRightPage(initialTmResponse)) {
-            val errorMessage = "No Trademark found, Either Trademark number is invalid or doesn't exist"
-            logger.error(errorMessage)
-        }
 
-        // Retry mechanism for the final POST request
-        val finalResponse: String = retry(maxRetries, retryDelay) {
+            if (!trademarkParser.checkIfOnRightPage(initialTmResponse)) {
+                val errorMessage = "No Trademark found, Either Trademark id: $appId is invalid or doesn't exist"
+                logger.error(errorMessage)
+            }
+
+            // Retry mechanism for the final POST request
             val finalFormData = payloadParser.getPayloadForThirdPage(response = initialTmResponse)
             httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
