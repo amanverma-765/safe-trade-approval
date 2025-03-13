@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/trademark.webxela.com.iml" filepath="$PROJECT_DIR$/.idea/trademark.webxela.com.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/prod-trademark.webxela.com.iml" filepath="$PROJECT_DIR$/.idea/prod-trademark.webxela.com.iml" />
     </modules>
   </component>
 </project>
