@@ -21,21 +21,10 @@ class TrademarkParser {
 
             val tables = doc.select("#panelgetdetail table")
 
-            try {
-                val statusTable = tables[1]
-                val statusRow = statusTable.select("tr")[1]
-                val status = statusRow.selectFirst("font[color=red] b")?.text()
-                status?.let {
-                    tableData["status"] = it
-                }
-            } catch (ex: Exception) {
-                logger.error("Error while getting trademark status")
-            }
-
             val targetTable = if (tables.size > 2 && tables[2].select("tr").size > 4) {
                 tables[2]
             } else {
-                tables.getOrNull(3) ?: throw Exception("Target table not found")
+                tables.getOrNull(3) ?: throw Exception("Target table not found, Invalid response")
             }
 
             for (row in targetTable.select("tr")) {
@@ -46,8 +35,21 @@ class TrademarkParser {
                     tableData[key] = value
                 }
             }
+
+            try {
+                val statusTable = tables[1]
+                val statusRow = statusTable.select("tr")[1]
+                val status = statusRow.selectFirst("font[color=red] b")?.text()
+                status?.let {
+                    tableData["status"] = it
+                }
+            } catch (ex: Exception) {
+                logger.error("Error while getting trademark status for: ${tableData["tmapplicationno."]}")
+            }
+
+
             trademark = Trademark(
-                status = tableData["status"] ?: "",
+                status = tableData["status"] ?: "Nil",
                 applicationNumber = tableData["tmapplicationno."] ?: throw Exception("Application Number missing"),
                 tmClass = tableData["class"] ?: throw Exception("Class missing"),
                 dateOfApplication = tableData["dateofapplication"],
