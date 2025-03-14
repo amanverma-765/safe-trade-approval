@@ -11,7 +11,6 @@ import io.ktor.client.request.*
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -59,7 +58,7 @@ class StaScraper(
         try {
             val tmResponse = trademarkScraper.requestTrademarkData(httpClient, appId, captcha)
             tmResponse?.let { response ->
-                tmData = trademarkParser.parseTrademarkDetails(response)
+                tmData = trademarkParser.parseTrademarkDetails(response, httpClient)
             }
         } catch (ex: Exception) {
             logger.error("Error while scraping application id $appId: ${ex.message}")

@@ -1,9 +1,16 @@
 package com.webxela.sta.backend.scraper.parser
 
 import com.webxela.sta.backend.domain.model.Trademark
+import com.webxela.sta.backend.utils.encodeAppNumber
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.util.*
+import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.File
 
 
 @Component
@@ -11,7 +18,7 @@ class TrademarkParser {
 
     private val logger = LoggerFactory.getLogger(TrademarkParser::class.java)
 
-    fun parseTrademarkDetails(response: String): Trademark? {
+    fun parseTrademarkDetails(response: String, httpClient: HttpClient): Trademark? {
 
         var trademark: Trademark? = null
 
@@ -46,6 +53,34 @@ class TrademarkParser {
                 logger.error("Status not found")
                 throw RuntimeException("Status not found for trademark: ${tableData["TM Application No."]}")
             }
+
+            // Extract image URL
+            if (tableData["Trade Mark Type"]?.lowercase().equals("device")) {
+                val encodedAppNumber = encodeAppNumber(tableData["TM Application No."] ?: "")
+                val appNumber = tableData["TM Application No."] ?: ""
+                val imgUrl = "https://tmrsearch.ipindia.gov.in/eregister/imagedoc.aspx?ID=1&APPNUMBER=$encodedAppNumber"
+
+                // Create directory structure in user home directory
+                val userHome = System.getProperty("user.home")
+                val outputDir = File("$userHome${File.separator}staFiles${File.separator}device")
+                if (!outputDir.exists()) {
+                    outputDir.mkdirs()
+                }
+
+                val outputPath = outputDir.absolutePath + File.separator + "${appNumber}_device.jpg"
+                val file = File(outputPath)
+
+                runBlocking {
+                    try {
+                        val imgResp = httpClient.get(imgUrl).readBytes()
+                        file.writeBytes(imgResp)
+                        logger.info("Image downloaded successfully to: $outputPath")
+                    } catch (e: Exception) {
+                        logger.error("Failed to download image: ${e.message}")
+                    }
+                }
+            }
+
 
             trademark = Trademark(
                 applicationNumber = tableData["TM Application No."] ?: throw RuntimeException("No Application Number found"),
