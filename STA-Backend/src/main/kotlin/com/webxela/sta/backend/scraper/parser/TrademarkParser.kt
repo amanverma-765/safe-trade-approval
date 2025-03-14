@@ -31,7 +31,10 @@ class TrademarkParser {
                 val cells = row.select("td")
                 if (cells.size == 2) {
                     val key = cells[0].text().trim()
-                    val value = cells[1].html().trim().replace("\n", ", ")
+                    val value = cells[1].html().trim()
+                        .replace("\n", ", ")
+                        .replace("<br>", " ")
+                        .replace("&nbsp;", " ")
                     tableData[key] = value
                 }
             }
@@ -64,7 +67,7 @@ class TrademarkParser {
                 emailId = tableData["Email Id"],
                 agentName = tableData["Attorney name"],
                 agentAddress = tableData["Attorney Address"],
-                publicationDetails = tableData["Publication detail"]
+                publicationDetails = tableData["Publication Details"]
             )
 
         } catch (ex: RuntimeException) {
