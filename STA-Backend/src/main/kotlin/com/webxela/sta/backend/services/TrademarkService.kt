@@ -104,13 +104,13 @@ class TrademarkService(
             val trademarks = staScraper.scrapeTrademarkByList(newTmNumbers.toList())
 
 //            withContext(Dispatchers.IO) {
-                try {
-                    ourTrademarkRepo.saveAll(trademarks.map { it.toOurTrademarkEntity() })
-                } catch (ex: DataIntegrityViolationException) {
-                    logger.warn("Duplicate entry ignored", ex)
-                } catch (ex: Exception) {
-                    logger.error("Unexpected error while saving trademark", ex)
-                }
+            try {
+                ourTrademarkRepo.saveAll(trademarks.map { it.toOurTrademarkEntity() })
+            } catch (ex: DataIntegrityViolationException) {
+                logger.warn("Duplicate entry ignored", ex)
+            } catch (ex: Exception) {
+                logger.error("Unexpected error while saving trademark", ex)
+            }
 //            }
 
             logger.info("Successfully processed ${trademarks.size} new trademarks")
