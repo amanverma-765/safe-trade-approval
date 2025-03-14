@@ -160,7 +160,8 @@ class TrademarkService(
             "{journalDOA}" to (journalTm?.dateOfApplication ?: "NA"),
             "{journalClass}" to (journalTm?.tmClass ?: "NA"),
             "{journalDesc}" to (journalTm?.publicationDetails ?: "NA"),
-            "{journalPr}" to (journalTm?.proprietorName ?: "NA")
+            "{journalPr}" to (journalTm?.proprietorName ?: "NA"),
+            "{journalUserDetail}" to (journalTm?.userDetails ?: "NA")
         )
 
         val templatePath = System.getProperty("user.home") + "/sta/staFiles/template.docx"
@@ -177,7 +178,8 @@ class TrademarkService(
                 "{ourDOA}" to (ourTm?.dateOfApplication ?: "NA"),
                 "{ourClass}" to (ourTm?.tmClass ?: "NA"),
                 "{ourDesc}" to (ourTm?.publicationDetails ?: "NA"),
-                "{ourPr}" to (ourTm?.proprietorName ?: "NA")
+                "{ourPr}" to (ourTm?.proprietorName ?: "NA"),
+                "{ourUserDetail}" to (ourTm?.userDetails ?: "NA")
             )
 
             val timestamp = SimpleDateFormat("HHmmssSSS").format(Date())
