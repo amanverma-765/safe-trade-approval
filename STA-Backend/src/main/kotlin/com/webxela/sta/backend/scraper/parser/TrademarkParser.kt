@@ -19,58 +19,55 @@ class TrademarkParser {
             val tableData = mutableMapOf<String, String>()
             val doc = Jsoup.parse(response)
 
-            val tables = doc.select("#panelgetdetail table")
+            val tmDataPanel = doc.select("#panelgetdetail")
 
-            val targetTable = if (tables.size > 2 && tables[2].select("tr").size > 4) {
-                tables[2]
-            } else {
-                tables.getOrNull(3) ?: throw Exception("Target table not found, Invalid response")
+            // Extract key-value pairs from the main table
+            val rows = tmDataPanel.select("table[border='1'] tr")
+            if (rows.isEmpty()) {
+                logger.error("Invalid trademark found")
+                throw IllegalArgumentException("Invalid trademark found")
             }
-
-            for (row in targetTable.select("tr")) {
+            for (row in rows) {
                 val cells = row.select("td")
                 if (cells.size == 2) {
-                    val key = cells[0].text().trim().lowercase().replace(" ", "")
-                    val value = cells[1].text().trim()
+                    val key = cells[0].text().trim()
+                    val value = cells[1].html().trim().replace("\n", ", ")
                     tableData[key] = value
                 }
             }
 
-            try {
-                val statusTable = tables[1]
-                val statusRow = statusTable.select("tr")[1]
-                val status = statusRow.selectFirst("font[color=red] b")?.text()
-                status?.let {
-                    tableData["status"] = it
-                }
-            } catch (ex: Exception) {
-                logger.error("Error while getting trademark status for: ${tableData["tmapplicationno."]}")
+            // Extract Status
+            val statusElement = doc.select("td font:contains(Status)").first()?.nextElementSibling()
+            val status = statusElement?.text()?.trim()
+            tableData["Status"] = status ?: run {
+                logger.error("Status not found")
+                throw RuntimeException("Status not found for trademark: ${tableData["TM Application No."]}")
             }
 
-
             trademark = Trademark(
-                status = tableData["status"] ?: "Nil",
-                applicationNumber = tableData["tmapplicationno."] ?: throw Exception("Application Number missing"),
-                tmClass = tableData["class"] ?: throw Exception("Class missing"),
-                dateOfApplication = tableData["dateofapplication"],
-                appropriateOffice = tableData["appropriateoffice"],
-                state = tableData["state"],
-                country = tableData["country"],
-                filingMode = tableData["filingmode"],
-                tmAppliedFor = tableData["tmappliedfor"] ?: throw Exception("TM Applied For missing"),
-                tmCategory = tableData["tmcategory"],
-                tmType = tableData["trademarktype"],
-                userDetails = tableData["userdetail"],
-                certDetail = tableData["certificatedetail"],
-                validUpTo = tableData["validupto/renewedupto"],
-                proprietorName = tableData["proprietorname"],
-                proprietorAddress = tableData["proprietoraddress"],
-                emailId = tableData["emailid"],
-                agentName = tableData["agentname"],
-                agentAddress = tableData["agentaddress"],
-                publicationDetails = tableData["publicationdetails"]
+                applicationNumber = tableData["TM Application No."] ?: throw RuntimeException("No Application Number found"),
+                status = tableData["Status"] ?: throw RuntimeException("No Status found"),
+                tmClass = tableData["Class"] ?: throw RuntimeException("No Class Found"),
+                dateOfApplication = tableData["Date of Application"] ?: throw RuntimeException("No Date of Application found"),
+                appropriateOffice = tableData["Appropriate Office"],
+                state = tableData["State"],
+                country = tableData["Country"],
+                filingMode = tableData["Filing Mode"],
+                tmAppliedFor = tableData["TM Applied For"] ?: throw RuntimeException("No TM Applied For found"),
+                tmCategory = tableData["TM Category"],
+                tmType = tableData["Trade Mark Type"] ?: throw RuntimeException("No Trade Mark Type found"),
+                userDetails = tableData["User Detail"],
+                certDetail = tableData["Certificate Detail"],
+                validUpTo = tableData["Valid upto/ Renewed upto"],
+                proprietorName = tableData["Proprietor name"],
+                proprietorAddress = tableData["Proprietor Address"],
+                emailId = tableData["Email Id"],
+                agentName = tableData["Attorney name"],
+                agentAddress = tableData["Attorney Address"],
+                publicationDetails = tableData["Publication detail"]
             )
-        } catch (ex: Exception) {
+
+        } catch (ex: RuntimeException) {
             logger.error("Error while parsing trademark table data: ${ex.message}")
         }
 
@@ -87,7 +84,7 @@ class TrademarkParser {
                     correctPage = true
                 }
             }
-        } catch (ex: Exception) {
+        } catch (ex: RuntimeException) {
             correctPage = false
         }
         return correctPage
