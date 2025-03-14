@@ -8,7 +8,9 @@ import org.apache.pdfbox.Loader
 import org.apache.pdfbox.text.PDFTextStripper
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.apache.poi.xwpf.usermodel.BodyType
 import org.apache.poi.xwpf.usermodel.XWPFDocument
+import org.apache.poi.xwpf.usermodel.XWPFParagraph
 import org.springframework.http.codec.multipart.FilePart
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -19,57 +21,97 @@ import java.io.FileOutputStream
 fun generatePdfReport(
     templatePath: String,
     replacements: Map<String, String>,
-    outputPath: String
+    outputPath: String,
+    imageReplacements: Map<String, String>
 ): ByteArray {
-    FileInputStream(templatePath).use { inputStream ->
+    // Process text and image replacements in paragraphs or table cells
+    fun processRun(run: org.apache.poi.xwpf.usermodel.XWPFRun, paragraph: XWPFParagraph) {
+        val runText = run.getText(0) ?: return
+
+        // Check for image replacements
+        for ((placeholder, imagePath) in imageReplacements) {
+            if (runText.contains(placeholder)) {
+
+                if (paragraph.partType != BodyType.TABLECELL) {
+                    run.setText("\n\n", 0)
+                } else {
+                    run.setText("", 0)
+                }
+
+                FileInputStream(imagePath).use { imageStream ->
+                    val (width, height) = calculatePreservedAspectRatioDimensions(imagePath, 100.0)
+                    run.addPicture(
+                        imageStream,
+                        XWPFDocument.PICTURE_TYPE_JPEG,
+                        imagePath,
+                        width,
+                        height
+                    )
+                }
+                paragraph.spacingAfter = 100
+                return
+            }
+        }
+
+        // Process text replacements if no image was found
+        if (replacements.keys.any { runText.contains(it) }) {
+            var modifiedText = runText
+            replacements.forEach { (placeholder, replacement) ->
+                modifiedText = modifiedText.replace(placeholder, replacement)
+            }
+            run.setText(modifiedText, 0)
+        }
+    }
+
+    return FileInputStream(templatePath).use { inputStream ->
         XWPFDocument(inputStream).use { document ->
-            // Replace text in paragraphs
+            // Process paragraphs
             document.paragraphs.forEach { paragraph ->
                 paragraph.runs.forEach { run ->
-                    run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }?.let { text ->
-                        var modifiedText = text
-                        replacements.forEach { (placeholder, replacement) ->
-                            modifiedText = modifiedText.replace(placeholder, replacement)
-                        }
-                        run.setText(modifiedText, 0)
-                    }
+                    processRun(run, paragraph)
                 }
             }
 
-            // Replace text in tables
+            // Process tables
             document.tables.forEach { table ->
                 table.rows.forEach { row ->
                     row.tableCells.forEach { cell ->
                         cell.paragraphs.forEach { paragraph ->
                             paragraph.runs.forEach { run ->
-                                run.getText(0)?.takeIf { text -> replacements.keys.any { text.contains(it) } }
-                                    ?.let { text ->
-                                        var modifiedText = text
-                                        replacements.forEach { (placeholder, replacement) ->
-                                            modifiedText = modifiedText.replace(placeholder, replacement)
-                                        }
-                                        run.setText(modifiedText, 0)
-                                    }
+                                processRun(run, paragraph)
                             }
                         }
                     }
                 }
             }
 
-            val pdfOutputStream = ByteArrayOutputStream()
-            val options = PdfOptions.create()
-
-            pdfOutputStream.use { pdfOutput ->
+            // Generate PDF output
+            ByteArrayOutputStream().use { pdfOutput ->
+                val options = PdfOptions.create()
                 PdfConverter.getInstance().convert(document, pdfOutput, options)
+
+                // Write to file
                 FileOutputStream(outputPath).use { fileOutput ->
                     fileOutput.write(pdfOutput.toByteArray())
                 }
-                return pdfOutput.toByteArray()
+
+                pdfOutput.toByteArray()
             }
         }
     }
 }
 
+
+// Helper function to calculate dimensions that preserve aspect ratio
+private fun calculatePreservedAspectRatioDimensions(imagePath: String, targetWidth: Double): Pair<Int, Int> {
+    val image = javax.imageio.ImageIO.read(File(imagePath))
+    val aspectRatio = image.height.toDouble() / image.width.toDouble()
+
+    val width = org.apache.poi.util.Units.toEMU(targetWidth)
+    val height = org.apache.poi.util.Units.toEMU(targetWidth * aspectRatio)
+
+    return Pair(width, height)
+}
 
 
 fun isExcelFile(file: FilePart): Boolean {
@@ -100,6 +142,7 @@ suspend fun extractNumbersFromExcel(file: FilePart): List<String> {
                                 numbers.add(cellValue)
                             }
                         }
+
                         CellType.STRING -> {
                             val cellValue = cell.stringCellValue
                             val regex = Regex("\\b\\d{7}\\b")
@@ -107,6 +150,7 @@ suspend fun extractNumbersFromExcel(file: FilePart): List<String> {
                                 numbers.add(it.value)
                             }
                         }
+
                         else -> continue
                     }
                 }
@@ -117,7 +161,6 @@ suspend fun extractNumbersFromExcel(file: FilePart): List<String> {
     tempFile.delete()
     return numbers
 }
-
 
 
 fun extractNumbersFromPDF(savedFilePathList: List<String>): List<String> {

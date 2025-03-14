@@ -35,8 +35,7 @@ class TrademarkService(
     private val latestJournalRepo: LatestJournalRepo,
     private val ourTrademarkRepo: OurTrademarkRepo,
     private val staScraper: StaScraper,
-    private val journalTmRepo: JournalTmRepo,
-    private val oppositionReportRepo: OppositionReportRepo
+    private val journalTmRepo: JournalTmRepo
 ) {
 
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
@@ -103,7 +102,6 @@ class TrademarkService(
             logger.info("Starting to scrape ${newTmNumbers.size} new trademarks")
             val trademarks = staScraper.scrapeTrademarkByList(newTmNumbers.toList())
 
-//            withContext(Dispatchers.IO) {
             try {
                 ourTrademarkRepo.saveAll(trademarks.map { it.toOurTrademarkEntity() })
             } catch (ex: DataIntegrityViolationException) {
@@ -111,18 +109,12 @@ class TrademarkService(
             } catch (ex: Exception) {
                 logger.error("Unexpected error while saving trademark", ex)
             }
-//            }
 
             logger.info("Successfully processed ${trademarks.size} new trademarks")
         } catch (ex: Exception) {
             logger.error("Error processing trademarks from Excel: ", ex)
             throw ex
         }
-    }
-
-
-    suspend fun getLatestJournals(): List<LatestJournal> = coroutineScope {
-        latestJournalRepo.findAll().map { it.toJournal() }
     }
 
     suspend fun getOurTrademarks(): List<Trademark> = coroutineScope {
@@ -133,121 +125,8 @@ class TrademarkService(
         ourTrademarkRepo.deleteByApplicationNumber(appid)
     }
 
-    suspend fun getGeneratedReports(): List<OppositionReport> = coroutineScope {
-        oppositionReportRepo.findAll().map { it.toOppositionReport() }
-    }
-
-    suspend fun generateReport(requestData: ReportGenRequest): List<ByteArray> {
-        val reportList = mutableListOf<ByteArray>()
-
-        val journal = withContext(Dispatchers.IO) {
-            latestJournalRepo.findByJournalNumber(requestData.journalNumber)?.toJournal()
-        } ?: throw Exception("Invalid journal number")
-
-        val journalTm = withContext(Dispatchers.IO) {
-            journalTmRepo.findByApplicationNumber(
-                journalNumber = requestData.journalNumber,
-                applicationNumber = requestData.journalAppId
-            ).getOrNull(0)
-        }
-
-        val commonReplacements = mapOf(
-            "{journalPublishDate}" to (journal.dateOfPublication),
-            "{journalNumber}" to (requestData.journalNumber),
-            "{journalTmName}" to (journalTm?.tmAppliedFor ?: "NA"),
-            "{journalTmAppId}" to (journalTm?.applicationNumber ?: "NA"),
-            "{journalDOA}" to (journalTm?.dateOfApplication ?: "NA"),
-            "{journalClass}" to (journalTm?.tmClass ?: "NA"),
-            "{journalDesc}" to (journalTm?.publicationDetails ?: "NA"),
-            "{journalPr}" to (journalTm?.proprietorName ?: "NA"),
-            "{journalUserDetail}" to (journalTm?.userDetails ?: "NA")
-        )
-
-        val templatePath = System.getProperty("user.home") + "/sta/staFiles/template.docx"
-        val outputDir = System.getProperty("user.home") + "/sta/staFiles/reports"
-
-        requestData.ourAppIdList.forEach { ourAppId ->
-            val ourTm = withContext(Dispatchers.IO) {
-                ourTrademarkRepo.findByApplicationNumber(applicationNumber = ourAppId)?.toTrademark()
-            }
-
-            val replacements = commonReplacements + mapOf(
-                "{ourTmName}" to (ourTm?.tmAppliedFor ?: "NA"),
-                "{ourAppId}" to (ourTm?.applicationNumber ?: "NA"),
-                "{ourDOA}" to (ourTm?.dateOfApplication ?: "NA"),
-                "{ourClass}" to (ourTm?.tmClass ?: "NA"),
-                "{ourDesc}" to (ourTm?.publicationDetails ?: "NA"),
-                "{ourPr}" to (ourTm?.proprietorName ?: "NA"),
-                "{ourUserDetail}" to (ourTm?.userDetails ?: "NA")
-            )
-
-            val timestamp = SimpleDateFormat("HHmmssSSS").format(Date())
-            val fileName = "opposition_${journalTm?.tmAppliedFor}-$ourAppId-$timestamp.pdf"
-            val outputPath = "$outputDir/$fileName"
-            File(outputDir).mkdirs()
-
-            val report = generatePdfReport(templatePath, replacements, outputPath)
-            reportList.add(report)
-            val oppositionReport = OppositionReport(
-                journalNumber = requestData.journalNumber,
-                ourAppId = ourAppId,
-                journalAppId = requestData.journalAppId,
-                report = fileName
-            )
-            oppositionReportRepo.save(oppositionReport.toOppositionReportEntity())
-        }
-        return reportList
-    }
-
-    suspend fun downloadReport(reportId: Long): ByteArray {
-        try {
-            val fileName = withContext(Dispatchers.IO) {
-                oppositionReportRepo.findById(reportId).orElseThrow()
-            }.toOppositionReport().report
-
-            val reportDir = System.getProperty("user.home") + "/sta/staFiles/reports"
-            val finalPath = "$reportDir/$fileName"
-            val file = Paths.get(finalPath).normalize().toAbsolutePath()
-            return withContext(Dispatchers.IO) {
-                Files.readAllBytes(file)
-            }
-        } catch (ex: Exception) {
-            logger.error("Failed to download report", ex)
-            throw IllegalAccessException("Failed to download report")
-        }
-    }
-
-    suspend fun deleteReport(reportId: Long) = coroutineScope {
-        try {
-            val fileName = withContext(Dispatchers.IO) {
-                oppositionReportRepo.findById(reportId).orElseThrow()
-            }.toOppositionReport().report
-
-            val reportDir = System.getProperty("user.home") + "/sta/staFiles/reports"
-            val finalPath = "$reportDir/$fileName"
-            withContext(Dispatchers.IO) {
-                val filePath: Path = Paths.get(finalPath)
-                if (Files.exists(filePath)) {
-                    try {
-                        Files.delete(filePath)
-                    } catch (ex: Exception) {
-                        logger.error("Failed to delete file at $finalPath. Error: ", ex)
-                        throw Exception("Failed to delete report")
-                    }
-                } else {
-                    logger.warn("File $fileName does not exist at $finalPath.")
-                    throw Exception("File doesn't exist")
-                }
-            }
-            withContext(Dispatchers.IO) {
-                oppositionReportRepo.deleteById(reportId)
-                logger.info("Report with ID $reportId deleted from repository.")
-            }
-
-        } catch (ex: Exception) {
-            logger.error("Failed to delete file: ", ex)
-            throw Exception("Failed to delete report")
-        }
+    suspend fun getLatestJournals(): List<LatestJournal> = coroutineScope {
+        latestJournalRepo.findAll().map { it.toJournal() }
     }
 
 }

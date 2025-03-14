@@ -3,10 +3,7 @@ package com.webxela.sta.backend.controller
 import com.webxela.sta.backend.domain.model.ErrorResponse
 import com.webxela.sta.backend.domain.model.JournalRequest
 import com.webxela.sta.backend.domain.model.ReportGenRequest
-import com.webxela.sta.backend.services.JournalScheduledTask
-import com.webxela.sta.backend.services.OurTrademarkScheduledTask
-import com.webxela.sta.backend.services.TrademarkMatchingService
-import com.webxela.sta.backend.services.TrademarkService
+import com.webxela.sta.backend.services.*
 import com.webxela.sta.backend.utils.isExcelFile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -20,7 +17,8 @@ class TrademarkController(
     private val trademarkService: TrademarkService,
     private val trademarkMatchingService: TrademarkMatchingService,
     private val journalScheduledTask: JournalScheduledTask,
-    private val ourTrademarkScheduledTask: OurTrademarkScheduledTask
+    private val ourTrademarkScheduledTask: OurTrademarkScheduledTask,
+    private val oppositionService: OppositionService
 ) {
 
     @GetMapping("/get/latest_journals")
@@ -167,7 +165,7 @@ class TrademarkController(
         @RequestBody reportGenRequest: ReportGenRequest
     ): ResponseEntity<List<Any>> {
         try {
-            val reports = trademarkService.generateReport(reportGenRequest)
+            val reports = oppositionService.generateReport(reportGenRequest)
             return ResponseEntity.ok(reports)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
@@ -178,7 +176,7 @@ class TrademarkController(
     @GetMapping("/get/generated_reports")
     suspend fun getGeneratedReports(): ResponseEntity<List<Any>> {
         try {
-            val reports = trademarkService.getGeneratedReports()
+            val reports = oppositionService.getGeneratedReports()
             return ResponseEntity.ok(reports)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
@@ -191,7 +189,7 @@ class TrademarkController(
         @PathVariable reportId: Long
     ): ResponseEntity<Any> {
         try {
-            val reportDoc = trademarkService.downloadReport(reportId)
+            val reportDoc = oppositionService.downloadReport(reportId)
             return ResponseEntity.ok(reportDoc)
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
@@ -204,7 +202,7 @@ class TrademarkController(
         @PathVariable reportId: Long
     ): ResponseEntity<Any> {
         try {
-            trademarkService.deleteReport(reportId)
+            oppositionService.deleteReport(reportId)
             return ResponseEntity.ok("Report deleted successfully")
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)

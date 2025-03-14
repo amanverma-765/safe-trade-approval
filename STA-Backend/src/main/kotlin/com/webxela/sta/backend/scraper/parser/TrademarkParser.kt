@@ -62,7 +62,7 @@ class TrademarkParser {
 
                 // Create directory structure in user home directory
                 val userHome = System.getProperty("user.home")
-                val outputDir = File("$userHome${File.separator}staFiles${File.separator}device")
+                val outputDir = File("$userHome/sta/staFiles/device")
                 if (!outputDir.exists()) {
                     outputDir.mkdirs()
                 }
