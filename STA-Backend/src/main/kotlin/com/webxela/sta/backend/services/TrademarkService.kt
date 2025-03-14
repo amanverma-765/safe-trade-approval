@@ -57,6 +57,7 @@ class TrademarkService(
                         // Fetch from our trademark repo if it's our trademark
                         ourTrademarkRepo.findByApplicationNumber(appId)?.toTrademark()
                     }
+
                     else -> {
                         // Fetch from journalTmRepo only if it is not our trademark
                         journalNumber?.let {
@@ -89,10 +90,10 @@ class TrademarkService(
 
             val tmNumberList = extractNumbersFromExcel(excelFile)
             val existingAppNumbers = withContext(Dispatchers.IO) {
-                ourTrademarkRepo.findAllApplicationNumbers() // Assumes a custom query method to get only application numbers
+                ourTrademarkRepo.findAllApplicationNumbers()
             }.toSet()
 
-            val newTmNumbers = tmNumberList.filterNot { it in existingAppNumbers }
+            val newTmNumbers = tmNumberList.filterNot { it in existingAppNumbers }.toSet()
 
             if (newTmNumbers.isEmpty()) {
                 logger.info("No new trademarks to process. All trademarks already exist in the database.")
@@ -100,21 +101,19 @@ class TrademarkService(
             }
 
             logger.info("Starting to scrape ${newTmNumbers.size} new trademarks")
-            val trademarks = staScraper.scrapeTrademarkByList(newTmNumbers)
+            val trademarks = staScraper.scrapeTrademarkByList(newTmNumbers.toList())
 
-            withContext(Dispatchers.IO) {
-                trademarks?.forEach { trademark ->
-                    try {
-                        ourTrademarkRepo.save(trademark.toOurTrademarkEntity())
-                    } catch (ex: DataIntegrityViolationException) {
-                        logger.warn("Duplicate entry ignored for application number: ${trademark.applicationNumber}", ex)
-                    } catch (ex: Exception) {
-                        logger.error("Unexpected error while saving trademark ${trademark.applicationNumber}", ex)
-                    }
+//            withContext(Dispatchers.IO) {
+                try {
+                    ourTrademarkRepo.saveAll(trademarks.map { it.toOurTrademarkEntity() })
+                } catch (ex: DataIntegrityViolationException) {
+                    logger.warn("Duplicate entry ignored", ex)
+                } catch (ex: Exception) {
+                    logger.error("Unexpected error while saving trademark", ex)
                 }
-            }
+//            }
 
-            logger.info("Successfully processed ${trademarks?.size} new trademarks")
+            logger.info("Successfully processed ${trademarks.size} new trademarks")
         } catch (ex: Exception) {
             logger.error("Error processing trademarks from Excel: ", ex)
             throw ex
