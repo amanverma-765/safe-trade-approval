@@ -62,3 +62,7 @@ pnpm dev
 ```
 
 You should now be able to access the application at http://localhost:3000.
+
+## Setting Up Domain and HTTPS SSL
+
+To set up the domain and HTTPS SSL for your application, follow the instructions provided in the [setup.md](docs/setup.md) file.
