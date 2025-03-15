@@ -128,7 +128,7 @@ class OppositionService(
                 "{journalTmAppId}" to (journalTm?.applicationNumber ?: "NA"),
                 "{journalDOA}" to (journalTm?.dateOfApplication ?: "NA"),
                 "{journalClass}" to (journalTm?.tmClass ?: "NA"),
-                "{journalDesc}" to (journalTm?.publicationDetails ?: "NA"),
+                "{journalServiceDetail}" to (journalTm?.serviceDetails ?: "NA"),
                 "{journalPr}" to (journalTm?.proprietorName ?: "NA"),
                 "{journalUserDetail}" to (journalTm?.userDetails ?: "NA")
             )
@@ -146,7 +146,7 @@ class OppositionService(
                     "{ourAppId}" to (ourTm?.applicationNumber ?: "NA"),
                     "{ourDOA}" to (ourTm?.dateOfApplication ?: "NA"),
                     "{ourClass}" to (ourTm?.tmClass ?: "NA"),
-                    "{ourDesc}" to (ourTm?.publicationDetails ?: "NA"),
+                    "{ourServiceDetail}" to (ourTm?.serviceDetails ?: "NA"),
                     "{ourPr}" to (ourTm?.proprietorName ?: "NA"),
                     "{ourUserDetail}" to (ourTm?.userDetails ?: "NA")
                 )

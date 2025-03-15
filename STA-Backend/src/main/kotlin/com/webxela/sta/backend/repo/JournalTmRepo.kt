@@ -19,29 +19,30 @@ class JournalTmRepo {
     fun createTableIfNotExists(tableName: String) {
         try {
             val query = """
-            CREATE TABLE IF NOT EXISTS $tableName (
-                tm_id BIGSERIAL PRIMARY KEY,
-                status VARCHAR(255),
-                application_number VARCHAR(255) NOT NULL,
-                tm_class VARCHAR(255) NOT NULL,
-                date_of_application VARCHAR(255),
-                appropriate_office Text,
-                state VARCHAR(255),
-                country VARCHAR(255),
-                filing_mode VARCHAR(255),
-                tm_applied_for TEXT NOT NULL,
-                tm_category Text,
-                tm_type TEXT,
-                user_details TEXT,
-                cert_detail TEXT,
-                valid_up_to TEXT,
-                proprietor_name TEXT,
-                proprietor_address TEXT,
-                email_id TEXT,
-                agent_name TEXT,
-                agent_address TEXT,
-                publication_details TEXT
-            );
+        CREATE TABLE IF NOT EXISTS $tableName (
+            tm_id BIGSERIAL PRIMARY KEY,
+            status VARCHAR(255),
+            application_number VARCHAR(255) NOT NULL,
+            tm_class VARCHAR(255) NOT NULL,
+            date_of_application VARCHAR(255),
+            appropriate_office TEXT,
+            state VARCHAR(255),
+            country VARCHAR(255),
+            filing_mode VARCHAR(255),
+            tm_applied_for TEXT NOT NULL,
+            tm_category TEXT,
+            tm_type TEXT,
+            user_details TEXT,
+            cert_detail TEXT,
+            valid_up_to TEXT,
+            proprietor_name TEXT,
+            proprietor_address TEXT,
+            email_id TEXT,
+            agent_name TEXT,
+            agent_address TEXT,
+            publication_details TEXT,
+            service_details TEXT  -- Added column here
+        );
         """.trimIndent()
             entityManager.createNativeQuery(query).executeUpdate()
         } catch (ex: Exception) {
@@ -50,12 +51,21 @@ class JournalTmRepo {
         }
     }
 
+
     @Transactional
     fun addAll(tableName: String, trademarks: List<Trademark>) {
         try {
             createTableIfNotExists(tableName)
-            val baseQuery =
-                "INSERT INTO $tableName (status, application_number, tm_class, date_of_application, appropriate_office, state, country, filing_mode, tm_applied_for, tm_category, tm_type, user_details, cert_detail, valid_up_to, proprietor_name, proprietor_address, email_id, agent_name, agent_address, publication_details) VALUES (:status, :application_number, :tm_class, :date_of_application, :appropriate_office, :state, :country, :filing_mode, :tm_applied_for, :tm_category, :tm_type, :user_details, :cert_detail, :valid_up_to, :proprietor_name, :proprietor_address, :email_id, :agent_name, :agent_address, :publication_details)"
+            val baseQuery = """
+                            INSERT INTO $tableName (status, application_number, tm_class, date_of_application, 
+                            appropriate_office, state, country, filing_mode, tm_applied_for, tm_category, tm_type, 
+                            user_details, cert_detail, valid_up_to, proprietor_name, proprietor_address, email_id, 
+                            agent_name, agent_address, publication_details, service_details) 
+                            VALUES (:status, :application_number, :tm_class, :date_of_application, :appropriate_office, 
+                            :state, :country, :filing_mode, :tm_applied_for, :tm_category, :tm_type, :user_details, 
+                            :cert_detail, :valid_up_to, :proprietor_name, :proprietor_address, :email_id, :agent_name, 
+                            :agent_address, :publication_details, :service_details)
+                        """.trimIndent()
 
             trademarks.forEach { trademark ->
                 val query = entityManager.createNativeQuery(baseQuery)
@@ -79,6 +89,7 @@ class JournalTmRepo {
                     .setParameter("agent_name", trademark.agentName)
                     .setParameter("agent_address", trademark.agentAddress)
                     .setParameter("publication_details", trademark.publicationDetails)
+                    .setParameter("service_details", trademark.serviceDetails)
 
                 query.executeUpdate()
             }
@@ -100,13 +111,16 @@ class JournalTmRepo {
             entityManager.createNativeQuery(deleteQuery).executeUpdate()
 
             // Prepare the base query for insertion
-            val baseQuery =
-                """INSERT INTO $tableName (status, application_number, tm_class, date_of_application, appropriate_office, 
-               state, country, filing_mode, tm_applied_for, tm_category, tm_type, user_details, cert_detail, valid_up_to, 
-               proprietor_name, proprietor_address, email_id, agent_name, agent_address, publication_details) 
-               VALUES (:status, :application_number, :tm_class, :date_of_application, :appropriate_office, :state, 
-               :country, :filing_mode, :tm_applied_for, :tm_category, :tm_type, :user_details, :cert_detail, :valid_up_to, 
-               :proprietor_name, :proprietor_address, :email_id, :agent_name, :agent_address, :publication_details)"""
+            val baseQuery = """
+                    INSERT INTO $tableName (status, application_number, tm_class, date_of_application, 
+                    appropriate_office, state, country, filing_mode, tm_applied_for, tm_category, tm_type, 
+                    user_details, cert_detail, valid_up_to, proprietor_name, proprietor_address, email_id, 
+                    agent_name, agent_address, publication_details, service_details) 
+                    VALUES (:status, :application_number, :tm_class, :date_of_application, :appropriate_office, 
+                    :state, :country, :filing_mode, :tm_applied_for, :tm_category, :tm_type, :user_details, 
+                    :cert_detail, :valid_up_to, :proprietor_name, :proprietor_address, :email_id, :agent_name, 
+                    :agent_address, :publication_details, :service_details)
+                """.trimIndent()
 
             // Insert the new trademarks
             trademarks.forEach { trademark ->
@@ -131,6 +145,7 @@ class JournalTmRepo {
                     .setParameter("agent_name", trademark.agentName)
                     .setParameter("agent_address", trademark.agentAddress)
                     .setParameter("publication_details", trademark.publicationDetails)
+                    .setParameter("service_details", trademark.serviceDetails)
 
                 query.executeUpdate()
             }

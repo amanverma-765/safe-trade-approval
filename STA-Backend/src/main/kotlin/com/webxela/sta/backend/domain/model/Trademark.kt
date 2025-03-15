@@ -22,4 +22,5 @@ data class Trademark(
     val agentName: String? = null,
     val agentAddress: String? = null,
     val publicationDetails: String? = null,
+    val serviceDetails: String? = null,
 )

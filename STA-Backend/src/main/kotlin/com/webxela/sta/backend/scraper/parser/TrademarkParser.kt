@@ -97,7 +97,8 @@ class TrademarkParser {
                 emailId = tableData["Email Id"],
                 agentName = tableData["Attorney name"],
                 agentAddress = tableData["Attorney Address"],
-                publicationDetails = tableData["Publication Details"]
+                publicationDetails = tableData["Publication Details"],
+                serviceDetails = tableData["Goods & Service Details"]
             )
 
         } catch (ex: RuntimeException) {
