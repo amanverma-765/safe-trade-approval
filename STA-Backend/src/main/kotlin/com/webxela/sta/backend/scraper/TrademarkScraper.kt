@@ -23,7 +23,8 @@ class TrademarkScraper(
 
     // Retry parameters
     private val maxRetries = 5 // Maximum number of retries
-    private val retryDelay = 900000L // Delay between retries (in milliseconds)
+    private val initialRetryDelay = 120000L // Initial delay (2 min)
+    private val maxRetryDelay = 900000L // Delay between retries (15 min)
 
     suspend fun requestTrademarkData(
         httpClient: HttpClient,
@@ -31,7 +32,7 @@ class TrademarkScraper(
         captcha: String
     ): String? {
 
-        val finalResponse = retry(maxRetries, retryDelay) {
+        val finalResponse = retry(maxRetries, initialRetryDelay) {
 
             logger.info("Extraction started for $appId")
 
@@ -48,13 +49,12 @@ class TrademarkScraper(
             }
             val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse.bodyAsText())
 
-            val secondPageResponse = retry(maxRetries, retryDelay) {
-                httpClient.post(TRADEMARK_URL) {
-                    contentType(ContentType.MultiPart.FormData)
-                    setBody(firstPageFormData)
-                    headers { getDefaultHeaders() }
-                }.bodyAsText()
-            }
+            val secondPageResponse = httpClient.post(TRADEMARK_URL) {
+                contentType(ContentType.MultiPart.FormData)
+                setBody(firstPageFormData)
+                headers { getDefaultHeaders() }
+            }.bodyAsText()
+
             val secondPageFormData = payloadParser.getPayloadFromSecondPage(appId, captcha, secondPageResponse)
 
             val initialTmResponse = httpClient.post(TRADEMARK_URL) {
@@ -82,18 +82,27 @@ class TrademarkScraper(
         return finalResponse
     }
 
-    // Retry function
-   private suspend fun <T> retry(maxRetries: Int, delayMillis: Long, block: suspend () -> T): T {
+    // Retry function with exponential backoff
+    private suspend fun <T> retry(maxRetries: Int, initialDelayMillis: Long, block: suspend () -> T): T {
         var currentAttempt = 0
         var lastError: Throwable? = null
+
         while (currentAttempt < maxRetries) {
             try {
                 return block()
             } catch (ex: Exception) {
                 currentAttempt++
                 lastError = ex
-                logger.warn("Attempt $currentAttempt failed: ${ex.message}. Retrying in $delayMillis ms...")
-                delay(delayMillis)
+
+                if (currentAttempt >= maxRetries) break
+
+                // Calculate exponential backoff with jitter
+                val exponentialDelay = initialDelayMillis * (1 shl (currentAttempt - 1))
+                val jitter = (Math.random() * 0.3 * exponentialDelay).toLong()
+                val delayWithJitter = (exponentialDelay + jitter).coerceAtMost(maxRetryDelay)
+
+                logger.warn("Attempt $currentAttempt failed: ${ex.message}. Retrying in ${delayWithJitter}ms...")
+                delay(delayWithJitter)
             }
         }
         throw IllegalStateException("Operation failed after $maxRetries attempts: ${lastError?.message}", lastError)
