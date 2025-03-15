@@ -70,11 +70,15 @@ class TrademarkParser {
                 val outputPath = outputDir.absolutePath + File.separator + "${appNumber}_device.jpg"
                 val file = File(outputPath)
 
-                runBlocking {
-                    downloadImageWithRetry(httpClient, imgUrl, file)
+                // Check if file already exists before downloading
+                if (file.exists()) {
+                    logger.info("Image for trademark $appNumber already exists at ${file.absolutePath}, skipping download")
+                } else {
+                    runBlocking {
+                        downloadImageWithRetry(httpClient, imgUrl, file)
+                    }
                 }
             }
-
 
             trademark = Trademark(
                 applicationNumber = tableData["TM Application No."]
