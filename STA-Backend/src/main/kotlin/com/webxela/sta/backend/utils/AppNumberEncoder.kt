@@ -20,9 +20,3 @@ fun encodeAppNumber(applicationNumber: String): String {
     val encodedBytes = Base64.getEncoder().encode(combined.toByteArray(Charsets.UTF_8))
     return String(encodedBytes, Charsets.UTF_8)
 }
-
-fun main() {
-    val appNumber = "1886600"
-    val encodedValue = encodeAppNumber(appNumber)
-    println("Encoded APPNUMBER: $encodedValue")
-}
