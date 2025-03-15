@@ -1,6 +1,7 @@
 package com.webxela.sta.backend.scraper.parser
 
 import com.webxela.sta.backend.domain.model.Trademark
+import com.webxela.sta.backend.utils.Header.getDefaultHeaders
 import com.webxela.sta.backend.utils.encodeAppNumber
 import io.ktor.client.*
 import io.ktor.client.request.*
@@ -136,7 +137,7 @@ class TrademarkParser {
 
         while (retryCount < maxRetries) {
             try {
-                val imgResp = httpClient.get(imgUrl).readBytes()
+                val imgResp = httpClient.get(imgUrl) { headers { getDefaultHeaders() } }.readBytes()
                 file.writeBytes(imgResp)
                 logger.info("Image downloaded successfully to: ${file.absolutePath}")
                 return // Success, exit the function

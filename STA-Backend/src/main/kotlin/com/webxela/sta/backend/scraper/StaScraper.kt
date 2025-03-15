@@ -6,6 +6,7 @@ import com.webxela.sta.backend.scraper.parser.TrademarkParser
 import com.webxela.sta.backend.utils.Constants.CAPTCHA_URL
 import com.webxela.sta.backend.utils.Constants.MAX_THREADS
 import com.webxela.sta.backend.utils.Constants.TRADEMARK_URL
+import com.webxela.sta.backend.utils.Header.getDefaultHeaders
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -42,8 +43,8 @@ class StaScraper(
     // Get CAPTCHA
     private suspend fun getCaptcha(httpClient: HttpClient): String {
         logger.info("Fetching new CAPTCHA...")
-        httpClient.get(CAPTCHA_URL)
-        httpClient.get(TRADEMARK_URL)
+        httpClient.get(CAPTCHA_URL) { headers { getDefaultHeaders() } }
+        httpClient.get(TRADEMARK_URL) { io.ktor.http.headers { getDefaultHeaders() } }
         val captcha = tmCaptchaScraper.requestCaptcha(httpClient)
         return captcha!!
     }

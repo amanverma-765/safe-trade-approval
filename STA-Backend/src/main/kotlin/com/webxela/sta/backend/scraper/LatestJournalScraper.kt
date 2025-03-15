@@ -5,6 +5,7 @@ import com.webxela.sta.backend.domain.model.LatestJournal
 import com.webxela.sta.backend.utils.Constants.JOURNAL_VIEW_URL
 import com.webxela.sta.backend.utils.Constants.MAX_JOURNALS
 import com.webxela.sta.backend.utils.Constants.TM_LISTING_PAGE
+import com.webxela.sta.backend.utils.Header.getDefaultHeaders
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
@@ -31,7 +32,7 @@ class LatestJournalScraper(private val httpClientConfig: KtorClientConfig) {
 
         try {
             // Fetch the TM listing page
-            val response = httpClient.get(TM_LISTING_PAGE)
+            val response = httpClient.get(TM_LISTING_PAGE) { headers { getDefaultHeaders() } }
             val document = Jsoup.parse(response.bodyAsText().trimIndent())
             val allRows = document.select("table#Journal tbody tr").take(MAX_JOURNALS)
             // Extract data from the row
@@ -103,6 +104,7 @@ class LatestJournalScraper(private val httpClientConfig: KtorClientConfig) {
                                                     formData { append("FileName", path) }
                                                 )
                                             )
+                                            headers { getDefaultHeaders() }
                                             timeout {
                                                 requestTimeoutMillis = 600000
                                                 socketTimeoutMillis = 600000

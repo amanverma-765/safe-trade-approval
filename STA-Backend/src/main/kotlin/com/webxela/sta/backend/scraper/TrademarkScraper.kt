@@ -4,6 +4,7 @@ import com.webxela.sta.backend.scraper.parser.PayloadParser
 import com.webxela.sta.backend.scraper.parser.TrademarkParser
 import com.webxela.sta.backend.services.TrademarkService
 import com.webxela.sta.backend.utils.Constants.TRADEMARK_URL
+import com.webxela.sta.backend.utils.Header.getDefaultHeaders
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -34,7 +35,7 @@ class TrademarkScraper(
 
             logger.info("Extraction started for $appId")
 
-            val firstPageResponse = httpClient.get(TRADEMARK_URL)
+            val firstPageResponse = httpClient.get(TRADEMARK_URL) { headers { getDefaultHeaders() } }
             if (firstPageResponse.status != HttpStatusCode.OK) {
                 if (
                     firstPageResponse.status == HttpStatusCode.InternalServerError
@@ -51,6 +52,7 @@ class TrademarkScraper(
                 httpClient.post(TRADEMARK_URL) {
                     contentType(ContentType.MultiPart.FormData)
                     setBody(firstPageFormData)
+                    headers { getDefaultHeaders() }
                 }.bodyAsText()
             }
             val secondPageFormData = payloadParser.getPayloadFromSecondPage(appId, captcha, secondPageResponse)
@@ -58,6 +60,7 @@ class TrademarkScraper(
             val initialTmResponse = httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
                 setBody(secondPageFormData)
+                io.ktor.http.headers { getDefaultHeaders() }
             }.bodyAsText()
 
 
@@ -71,6 +74,7 @@ class TrademarkScraper(
             httpClient.post(TRADEMARK_URL) {
                 contentType(ContentType.MultiPart.FormData)
                 setBody(finalFormData)
+                io.ktor.http.headers { getDefaultHeaders() }
             }.bodyAsText()
         }
 

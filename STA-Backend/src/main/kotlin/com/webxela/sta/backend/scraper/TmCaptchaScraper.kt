@@ -1,6 +1,7 @@
 package com.webxela.sta.backend.scraper
 
 import com.webxela.sta.backend.utils.Constants.GET_CAPTCHA_URL
+import com.webxela.sta.backend.utils.Header.getDefaultHeaders
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -22,6 +23,7 @@ class TmCaptchaScraper {
             val response = httpClient.post(GET_CAPTCHA_URL) {
                 contentType(ContentType.Application.Json)
                 setBody(payload)
+                headers { getDefaultHeaders() }
             }
 
             if (response.status == HttpStatusCode.OK) {
