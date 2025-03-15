@@ -27,7 +27,7 @@ class OurTrademarkScheduledTask(
         scheduleOurTrademarkStatusUpdate()
     }
 
-    @Scheduled(cron = "0 0 0 * * MON", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 0 0 * * TUE", zone = "Asia/Kolkata")
     fun scheduleOurTrademarkStatusUpdate() {
         logger.info("Starting scheduled OurTrademark scraping task")
         try {

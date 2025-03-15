@@ -35,7 +35,7 @@ class TrademarkScraper(
 
         val finalResponse = retryWithExponentialBackoff(maxRetries, initialRetryDelay, maxRetryDelay) {
 
-            logger.info("Extraction started for $appId")
+//            logger.info("Extraction started for $appId")
 
             val firstPageResponse = httpClient.get(TRADEMARK_URL) { headers { getDefaultHeaders() } }
             if (firstPageResponse.status != HttpStatusCode.OK) {
