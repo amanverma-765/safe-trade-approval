@@ -18,6 +18,11 @@ class OurTrademarkScheduledTask(
 
     private val logger = LoggerFactory.getLogger(OurTrademarkScheduledTask::class.java)
 
+    // Retry parameters
+    private val maxRetries = 10 // Maximum number of retries
+    private val initialRetryDelay = 120000L // Initial delay (2 min)
+    private val maxRetryDelay = 600000L // Delay between retries (10 min)
+
     fun runOurTrademarkStatusUpdateManually() {
         scheduleOurTrademarkStatusUpdate()
     }
@@ -44,7 +49,7 @@ class OurTrademarkScheduledTask(
                     }
 
                     // Scrape all the collected trademarks with retry mechanism
-                    val ourScrapedTrademarks = retryWithExponentialBackoff {
+                    val ourScrapedTrademarks = retryWithExponentialBackoff(maxRetries, initialRetryDelay, maxRetryDelay) {
                         val trademarks = staScraper.scrapeTrademarkByList(ourTmAppIds)
                         if (trademarks.isEmpty()) {
                             logger.warn("No trademarks scraped, retrying...")

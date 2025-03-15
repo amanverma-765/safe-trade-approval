@@ -31,22 +31,13 @@ class StaScraper(
         val trademark: Trademark?
         try {
             val httpClient = httpClientConfig.createHttpClient()
-            val captcha = getCaptcha(httpClient)
+            val captcha = tmCaptchaScraper.requestCaptcha(httpClient)
             trademark = scrapeTrademark(httpClient = httpClient, appId = appId, captcha = captcha)
         } catch (ex: Exception) {
             logger.error("Error while scraping by application id ${ex.message}")
             throw ex
         }
         return trademark
-    }
-
-    // Get CAPTCHA
-    private suspend fun getCaptcha(httpClient: HttpClient): String {
-        logger.info("Fetching new CAPTCHA...")
-        httpClient.get(CAPTCHA_URL) { headers { getDefaultHeaders() } }
-        httpClient.get(TRADEMARK_URL) { io.ktor.http.headers { getDefaultHeaders() } }
-        val captcha = tmCaptchaScraper.requestCaptcha(httpClient)
-        return captcha!!
     }
 
     // Scrape trademark data
@@ -89,7 +80,8 @@ class StaScraper(
                     async(threadPool) {
                         val httpClient = httpClientConfig.createHttpClient()
                         try {
-                            val captcha = getCaptcha(httpClient)  // Get new CAPTCHA for each chunk/request
+                            val captcha =
+                                tmCaptchaScraper.requestCaptcha(httpClient) // Get new CAPTCHA for each chunk/request
                             chunk.mapNotNull { number ->
                                 scrapeTrademark(httpClient, number, captcha)
                             }

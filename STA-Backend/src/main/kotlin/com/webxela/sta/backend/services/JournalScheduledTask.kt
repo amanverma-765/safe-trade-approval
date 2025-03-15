@@ -26,6 +26,11 @@ class JournalScheduledTask(
 ) {
     private val logger = LoggerFactory.getLogger(JournalScheduledTask::class.java)
 
+    // Retry parameters
+    private val maxRetries = 10 // Maximum number of retries
+    private val initialRetryDelay = 120000L // Initial delay (2 min)
+    private val maxRetryDelay = 600000L // Delay between retries (10 min)
+
     sealed class ScrapingResult {
         data object Success : ScrapingResult()
         data object JournalExists : ScrapingResult()
@@ -109,7 +114,7 @@ class JournalScheduledTask(
 
                     try {
                         // Apply retry mechanism individually for each journal group
-                        retryWithExponentialBackoff {
+                        retryWithExponentialBackoff(maxRetries, initialRetryDelay, maxRetryDelay) {
                             when (val result = processJournalGroup(journalGroup)) {
                                 is ScrapingResult.Success ->
                                     logger.info("Successfully processed journal $journalNumber")
