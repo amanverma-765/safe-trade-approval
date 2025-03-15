@@ -70,7 +70,6 @@ data class OurTrademarkEntity(
     @Column(name = "publication_details")
     val publicationDetails: String? = null,
 
-    @Lob
     @Column(name = "service_details", columnDefinition = "TEXT")
     val serviceDetails: String? = null
 

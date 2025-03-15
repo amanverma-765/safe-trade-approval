@@ -96,8 +96,8 @@ class TrademarkParser {
                 proprietorName = tableData["Proprietor name"],
                 proprietorAddress = tableData["Proprietor Address"],
                 emailId = tableData["Email Id"],
-                agentName = tableData["Attorney name"],
-                agentAddress = tableData["Attorney Address"],
+                agentName = tableData["Attorney name"] ?: tableData["Agent name"],
+                agentAddress = tableData["Attorney Address"] ?: tableData["Agent Address"],
                 publicationDetails = tableData["Publication Details"],
                 serviceDetails = tableData["Goods & Service Details"]
             )

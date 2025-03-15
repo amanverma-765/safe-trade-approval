@@ -27,7 +27,8 @@ object OurTrademarkMapper {
             tmType = this.tmType,
             country = this.country,
             filingMode = this.filingMode,
-            tmCategory = this.tmCategory
+            tmCategory = this.tmCategory,
+            serviceDetails = this.serviceDetails
         )
     }
 
@@ -52,7 +53,8 @@ object OurTrademarkMapper {
             tmType = this.tmType,
             country = this.country,
             filingMode = this.filingMode,
-            tmCategory = this.tmCategory
+            tmCategory = this.tmCategory,
+            serviceDetails = this.serviceDetails
         )
     }
 }

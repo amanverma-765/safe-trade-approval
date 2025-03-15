@@ -66,7 +66,7 @@ class JournalScheduledTask(
                     // Save the new journal
                     latestJournalRepo.save(journalGroup.first().toJournalEntity())
                 } else {
-                    println("Journal with journalNumber $journalNumber already exists.")
+                    logger.info("Journal with journalNumber $journalNumber already exists.")
                 }
                 runCleanup() // clean all extra unused journals
             }

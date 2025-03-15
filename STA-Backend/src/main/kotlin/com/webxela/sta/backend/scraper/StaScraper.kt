@@ -103,7 +103,7 @@ class StaScraper(
                     tData.addAll(it)
                 }
             }
-            println("All ${tData.size} trademarks scraped")
+            logger.info("All ${tData.size} trademarks scraped")
             tData // Return collected data only if everything succeeds
         } catch (e: IllegalStateException) {
             throw e
