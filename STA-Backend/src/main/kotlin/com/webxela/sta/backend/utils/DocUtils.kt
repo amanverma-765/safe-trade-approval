@@ -15,13 +15,11 @@ import org.springframework.http.codec.multipart.FilePart
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 
 
 fun generatePdfReport(
     templatePath: String,
     replacements: Map<String, String>,
-    outputPath: String,
     imageReplacements: Map<String, String>
 ): ByteArray {
     // Process text and image replacements in paragraphs or table cells
@@ -89,12 +87,6 @@ fun generatePdfReport(
             ByteArrayOutputStream().use { pdfOutput ->
                 val options = PdfOptions.create()
                 PdfConverter.getInstance().convert(document, pdfOutput, options)
-
-                // Write to file
-                FileOutputStream(outputPath).use { fileOutput ->
-                    fileOutput.write(pdfOutput.toByteArray())
-                }
-
                 pdfOutput.toByteArray()
             }
         }
@@ -184,4 +176,44 @@ fun extractNumbersFromPDF(savedFilePathList: List<String>): List<String> {
         }
     }
     return numbers
+}
+
+
+fun extractTmPageFromPDF(
+    savedFilePathList: List<String>,
+    applicationNumber: String
+): ByteArray? {
+
+    val classPattern = Regex("Class \\d+") // Pattern to match "Class {num}" anywhere on the page
+
+    savedFilePathList.forEach { path ->
+        Loader.loadPDF(File(path)).use { document ->
+            val pdfStripper = PDFTextStripper()
+
+            for (page in 1..document.numberOfPages) {
+                pdfStripper.startPage = page
+                pdfStripper.endPage = page
+
+                val text = pdfStripper.getText(document)
+                if (text.contains(applicationNumber) && classPattern.containsMatchIn(text)) {
+                    // Found the page containing both the application number and class pattern
+                    // Extract this specific page as a separate PDF
+                    val outputStream = ByteArrayOutputStream()
+                    val splitter = org.apache.pdfbox.multipdf.Splitter()
+
+                    splitter.setStartPage(page)
+                    splitter.setEndPage(page)
+                    val pages = splitter.split(document)
+
+                    if (pages.isNotEmpty()) {
+                        val newDoc = pages[0]
+                        newDoc.save(outputStream)
+                        newDoc.close()
+                        return outputStream.toByteArray()
+                    }
+                }
+            }
+        }
+    }
+    return null
 }

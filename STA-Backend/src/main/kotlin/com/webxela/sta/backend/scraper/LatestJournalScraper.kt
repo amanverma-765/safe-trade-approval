@@ -122,7 +122,7 @@ class LatestJournalScraper(private val httpClientConfig: KtorClientConfig) {
                                         for (i in 1..maxRetries) {
                                             if (File(actualFilePath).exists()) {
                                                 isFileSaved = true
-                                                logger.info("PDF downloaded and saved to $actualFilePath")
+                                                logger.info("PDF downloaded and saved at $actualFilePath")
                                                 break
                                             } else {
                                                 logger.info("File not found yet. Retrying... attempt $i")

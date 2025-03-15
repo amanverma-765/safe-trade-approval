@@ -163,10 +163,10 @@ class TrademarkController(
     @PostMapping("/generate_report")
     suspend fun generateReport(
         @RequestBody reportGenRequest: ReportGenRequest
-    ): ResponseEntity<List<Any>> {
+    ): ResponseEntity<Any> {
         try {
-            val reports = oppositionService.generateReport(reportGenRequest)
-            return ResponseEntity.ok(reports)
+            oppositionService.generateReport(reportGenRequest)
+            return ResponseEntity.ok("{message: Report Generated Successfully}")
         } catch (ex: Exception) {
             val error = ErrorResponse(message = ex.message)
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(listOf(error))

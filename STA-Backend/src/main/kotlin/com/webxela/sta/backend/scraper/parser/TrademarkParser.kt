@@ -5,7 +5,6 @@ import com.webxela.sta.backend.utils.encodeAppNumber
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.util.*
 import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.slf4j.LoggerFactory
@@ -54,7 +53,7 @@ class TrademarkParser {
                 throw RuntimeException("Status not found for trademark: ${tableData["TM Application No."]}")
             }
 
-            // Extract image URL
+            // Extract image
             if (tableData["Trade Mark Type"]?.lowercase().equals("device")) {
                 val encodedAppNumber = encodeAppNumber(tableData["TM Application No."] ?: "")
                 val appNumber = tableData["TM Application No."] ?: ""
@@ -71,22 +70,18 @@ class TrademarkParser {
                 val file = File(outputPath)
 
                 runBlocking {
-                    try {
-                        val imgResp = httpClient.get(imgUrl).readBytes()
-                        file.writeBytes(imgResp)
-                        logger.info("Image downloaded successfully to: $outputPath")
-                    } catch (e: Exception) {
-                        logger.error("Failed to download image: ${e.message}")
-                    }
+                    downloadImageWithRetry(httpClient, imgUrl, file)
                 }
             }
 
 
             trademark = Trademark(
-                applicationNumber = tableData["TM Application No."] ?: throw RuntimeException("No Application Number found"),
+                applicationNumber = tableData["TM Application No."]
+                    ?: throw RuntimeException("No Application Number found"),
                 status = tableData["Status"] ?: throw RuntimeException("No Status found"),
                 tmClass = tableData["Class"] ?: throw RuntimeException("No Class Found"),
-                dateOfApplication = tableData["Date of Application"] ?: throw RuntimeException("No Date of Application found"),
+                dateOfApplication = tableData["Date of Application"]
+                    ?: throw RuntimeException("No Date of Application found"),
                 appropriateOffice = tableData["Appropriate Office"],
                 state = tableData["State"],
                 country = tableData["Country"],
@@ -126,6 +121,37 @@ class TrademarkParser {
             correctPage = false
         }
         return correctPage
+    }
+
+    private suspend fun downloadImageWithRetry(
+        httpClient: HttpClient,
+        imgUrl: String,
+        file: File,
+        maxRetries: Int = 3,
+        initialDelayMs: Long = 1000
+    ) {
+        var retryCount = 0
+        var lastException: Exception? = null
+
+        while (retryCount < maxRetries) {
+            try {
+                val imgResp = httpClient.get(imgUrl).readBytes()
+                file.writeBytes(imgResp)
+                logger.info("Image downloaded successfully to: ${file.absolutePath}")
+                return // Success, exit the function
+            } catch (e: Exception) {
+                lastException = e
+                retryCount++
+                logger.warn("Attempt $retryCount/$maxRetries to download image failed: ${e.message}")
+
+                if (retryCount < maxRetries) {
+                    val delayTime = initialDelayMs * (1L shl (retryCount - 1)) // Exponential backoff
+                    kotlinx.coroutines.delay(delayTime)
+                }
+            }
+        }
+
+        logger.error("Failed to download image after $maxRetries attempts: ${lastException?.message}")
     }
 
 }
