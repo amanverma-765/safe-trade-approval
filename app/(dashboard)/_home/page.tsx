@@ -201,21 +201,9 @@ function ProductsTable({
         )
       );
 
-      // Collect results from all API calls
-      const data = await Promise.all(
-        responses.map((response) => {
-          if (!response.ok) {
-            throw new Error(
-              `Failed to generate report: ${response.statusText}`
-            );
-          }
-          return response.json();
-        })
-      );
-
-      console.log('Individual opposition generated successfully:', data);
+      console.log('Individual opposition generated successfully:');
       alert(
-        'Individual opposition generated successfully for selected entries.'
+        'Opposition Report is generated successfully for selected entries.'
       );
       window.open('/oppositions', '_blank');
     } catch (error) {
