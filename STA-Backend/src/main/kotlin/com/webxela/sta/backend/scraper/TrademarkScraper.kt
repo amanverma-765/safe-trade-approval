@@ -32,7 +32,7 @@ class TrademarkScraper(
         captcha: String
     ): String? {
 
-        val finalResponse = retry(maxRetries, initialRetryDelay) {
+        val finalResponse = retryWithExponentialBackoff(maxRetries, initialRetryDelay) {
 
             logger.info("Extraction started for $appId")
 
@@ -45,7 +45,7 @@ class TrademarkScraper(
                     throw IllegalStateException("Blocked by server, exiting...")
                 }
                 logger.error("Failed to fetch Trademark data, getting status code ${firstPageResponse.status.value} ")
-                return@retry null
+                return@retryWithExponentialBackoff null
             }
             val firstPageFormData = payloadParser.getPayloadFromFirstPage(firstPageResponse.bodyAsText())
 
@@ -67,7 +67,7 @@ class TrademarkScraper(
             if (!trademarkParser.checkIfOnRightPage(initialTmResponse)) {
                 val errorMessage = "No Trademark found, Either Trademark id: $appId is invalid or doesn't exist"
                 logger.error(errorMessage)
-                return@retry null
+                return@retryWithExponentialBackoff null
             }
 
             // Retry mechanism for the final POST request
@@ -83,7 +83,11 @@ class TrademarkScraper(
     }
 
     // Retry function with exponential backoff
-    private suspend fun <T> retry(maxRetries: Int, initialDelayMillis: Long, block: suspend () -> T): T {
+    private suspend fun <T> retryWithExponentialBackoff(
+        maxRetries: Int,
+        initialDelayMillis: Long,
+        block: suspend () -> T
+    ): T {
         var currentAttempt = 0
         var lastError: Throwable? = null
 
