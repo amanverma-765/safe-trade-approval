@@ -23,7 +23,7 @@ class TrademarkScraper(
 
     // Retry parameters
     private val maxRetries = 5 // Maximum number of retries
-    private val retryDelay = 5000L // Delay between retries (in milliseconds)
+    private val retryDelay = 900000L // Delay between retries (in milliseconds)
 
     suspend fun requestTrademarkData(
         httpClient: HttpClient,
@@ -67,6 +67,7 @@ class TrademarkScraper(
             if (!trademarkParser.checkIfOnRightPage(initialTmResponse)) {
                 val errorMessage = "No Trademark found, Either Trademark id: $appId is invalid or doesn't exist"
                 logger.error(errorMessage)
+                return@retry null
             }
 
             // Retry mechanism for the final POST request
@@ -77,7 +78,6 @@ class TrademarkScraper(
                 io.ktor.http.headers { getDefaultHeaders() }
             }.bodyAsText()
         }
-
         logger.info("Extraction completed for $appId")
         return finalResponse
     }
