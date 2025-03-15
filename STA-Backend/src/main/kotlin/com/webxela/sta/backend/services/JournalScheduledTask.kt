@@ -81,45 +81,54 @@ class JournalScheduledTask(
         logger.info("Starting scheduled journal scraping task")
         runBlocking {
             try {
-                retryWithExponentialBackoff {
-                    // Fetch journals
-                    val fetchedJournals = latestJournalScraper.fetchJournal()
+                // Fetch journals
+                val fetchedJournals = latestJournalScraper.fetchJournal()
 
-                    // Get existing journal numbers from the database
-                    val existingJournalNumbers = withContext(Dispatchers.IO) {
-                        latestJournalRepo.findAll().map { it.journalNumber }.toSet()
-                    }
+                // Get existing journal numbers from the database
+                val existingJournalNumbers = withContext(Dispatchers.IO) {
+                    latestJournalRepo.findAll().map { it.journalNumber }.toSet()
+                }
 
-                    // Filter out journals that already exist
-                    val journalsToProcess = fetchedJournals.filter {
-                        !existingJournalNumbers.contains(it.journalNumber)
-                    }
+                // Filter out journals that already exist
+                val journalsToProcess = fetchedJournals.filter {
+                    !existingJournalNumbers.contains(it.journalNumber)
+                }
 
-                    if (journalsToProcess.isEmpty()) {
-                        logger.info("No new journals to process")
-                        return@retryWithExponentialBackoff
-                    }
+                if (journalsToProcess.isEmpty()) {
+                    logger.info("No new journals to process")
+                    return@runBlocking
+                }
 
-                    logger.info("Found ${journalsToProcess.map { it.journalNumber }.toSet()} new journals to process")
+                logger.info("Found ${journalsToProcess.map { it.journalNumber }.toSet()} new journals to process")
 
-                    // Process each new journal group sequentially
-                    val groupedJournals = journalsToProcess.groupBy { it.journalNumber }.values.map { it.toList() }
-                    for (journalGroup in groupedJournals) {
-                        when (val result = processJournalGroup(journalGroup)) {
-                            is ScrapingResult.Success ->
-                                logger.info("Successfully processed journal ${journalGroup.first().journalNumber}")
+                // Process each new journal group sequentially, with independent retry mechanisms
+                val groupedJournals = journalsToProcess.groupBy { it.journalNumber }.values.map { it.toList() }
+                for (journalGroup in groupedJournals) {
+                    val journalNumber = journalGroup.first().journalNumber
+                    logger.info("Processing journal group $journalNumber")
 
-                            is ScrapingResult.JournalExists ->
-                                logger.info("Journal ${journalGroup.first().journalNumber} already exists")
+                    try {
+                        // Apply retry mechanism individually for each journal group
+                        retryWithExponentialBackoff {
+                            when (val result = processJournalGroup(journalGroup)) {
+                                is ScrapingResult.Success ->
+                                    logger.info("Successfully processed journal $journalNumber")
 
-                            is ScrapingResult.Error ->
-                                throw result.exception
+                                is ScrapingResult.JournalExists ->
+                                    logger.info("Journal $journalNumber already exists")
+
+                                is ScrapingResult.Error ->
+                                    throw result.exception
+                            }
                         }
+                    } catch (e: Exception) {
+                        logger.error("Failed to process journal $journalNumber after all retries", e)
+                        // Continue with the next journal group instead of failing the entire process
+                        continue
                     }
                 }
             } catch (e: Exception) {
                 logger.error("Fatal error in journal scraping task", e)
-                throw e
             }
         }
     }

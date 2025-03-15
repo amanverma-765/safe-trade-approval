@@ -92,6 +92,8 @@ class StaScraper(
                             chunk.mapNotNull { number ->
                                 scrapeTrademark(httpClient, number, captcha)
                             }
+                        } catch (e: IllegalStateException) {
+                            throw e
                         } finally {
                             httpClient.close()
                         }
@@ -102,8 +104,10 @@ class StaScraper(
             }
             println("All ${tData.size} trademarks scraped")
             tData // Return collected data only if everything succeeds
+        } catch (e: IllegalStateException) {
+            throw e
         } catch (e: Exception) {
-            println("Error during scraping: ${e.message}")
+            logger.error("Error during scraping: ${e.message}", e)
             emptyList()
         } finally {
             threadPool.close()

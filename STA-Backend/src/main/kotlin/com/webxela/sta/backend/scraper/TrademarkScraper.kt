@@ -21,7 +21,7 @@ class TrademarkScraper(
     private val logger = LoggerFactory.getLogger(TrademarkService::class.java)
 
     // Retry parameters
-    private val maxRetries = 4 // Maximum number of retries
+    private val maxRetries = 5 // Maximum number of retries
     private val retryDelay = 5000L // Delay between retries (in milliseconds)
 
     suspend fun requestTrademarkData(
@@ -36,6 +36,12 @@ class TrademarkScraper(
 
             val firstPageResponse = httpClient.get(TRADEMARK_URL)
             if (firstPageResponse.status != HttpStatusCode.OK) {
+                if (
+                    firstPageResponse.status == HttpStatusCode.InternalServerError
+                    || firstPageResponse.status == HttpStatusCode.Unauthorized
+                ) {
+                    throw IllegalStateException("Blocked by server, exiting...")
+                }
                 logger.error("Failed to fetch Trademark data, getting status code ${firstPageResponse.status.value} ")
                 return@retry null
             }
@@ -73,7 +79,7 @@ class TrademarkScraper(
     }
 
     // Retry function
-    private suspend fun <T> retry(maxRetries: Int, delayMillis: Long, block: suspend () -> T): T {
+   private suspend fun <T> retry(maxRetries: Int, delayMillis: Long, block: suspend () -> T): T {
         var currentAttempt = 0
         var lastError: Throwable? = null
         while (currentAttempt < maxRetries) {
@@ -86,6 +92,6 @@ class TrademarkScraper(
                 delay(delayMillis)
             }
         }
-        throw lastError ?: IllegalStateException("Unknown error during retry")
+        throw IllegalStateException("Operation failed after $maxRetries attempts: ${lastError?.message}", lastError)
     }
 }
