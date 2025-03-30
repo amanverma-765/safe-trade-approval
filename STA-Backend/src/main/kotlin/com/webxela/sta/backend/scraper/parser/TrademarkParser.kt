@@ -54,10 +54,12 @@ class TrademarkParser {
                 throw RuntimeException("Status not found for trademark: ${tableData["TM Application No."]}")
             }
 
-            // Extract image
-            if (tableData["Trade Mark Type"]?.lowercase().equals("device")) {
-                val encodedAppNumber = encodeAppNumber(tableData["TM Application No."] ?: "")
-                val appNumber = tableData["TM Application No."] ?: ""
+            // Extract image only if it's a device trademark and has a valid application number
+            val appNumber = tableData["TM Application No."]
+            val isDeviceType = tableData["Trade Mark Type"]?.lowercase()?.contains("device") ?: false
+
+            if (isDeviceType && appNumber != null) {
+                val encodedAppNumber = encodeAppNumber(appNumber)
                 val imgUrl = "https://tmrsearch.ipindia.gov.in/eregister/imagedoc.aspx?ID=1&APPNUMBER=$encodedAppNumber"
 
                 // Create directory structure in user home directory
@@ -79,6 +81,7 @@ class TrademarkParser {
                     }
                 }
             }
+
 
             trademark = Trademark(
                 applicationNumber = tableData["TM Application No."]
